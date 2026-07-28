@@ -37,9 +37,11 @@ def login():
         return redirect(url_for('web.dashboard'))
 
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
+        login_str = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter(
+            (User.username == login_str) | (User.email == login_str)
+        ).first()
         if user and user.check_password(password):
             if user.is_locked():
                 flash('Account is locked. Contact an admin.', 'error')
@@ -47,7 +49,7 @@ def login():
                 login_user(user)
                 next_page = request.args.get('next')
                 return redirect(next_page or url_for('web.dashboard'))
-        flash('Invalid username or password', 'error')
+        flash('Invalid username/email or password', 'error')
     return render_template('login.html')
 
 
@@ -171,6 +173,20 @@ def settings():
                 current_user.set_password(new_pw)
                 db.session.commit()
                 flash('Password updated', 'success')
+
+        elif action == 'username':
+            username = request.form.get('username', '').strip()
+            if not username:
+                flash('Username is required', 'error')
+            elif (
+                User.query.filter_by(username=username).first()
+                and username != current_user.username
+            ):
+                flash('Username already taken', 'error')
+            else:
+                current_user.username = username
+                db.session.commit()
+                flash('Username updated', 'success')
 
         elif action == 'email':
             email = request.form.get('email', '').strip()

@@ -5,6 +5,35 @@
   <div class="col-md-6">
     <div class="card mb-4">
       <div class="card-body">
+        <h4 class="card-title">Change Username</h4>
+        <form method="POST">
+          <input type="hidden" name="action" value="username">
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" value="{{ current_user.username }}" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Update Username</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h4 class="card-title">Change Email</h4>
+        <form method="POST">
+          <input type="hidden" name="action" value="email">
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control"
+                   value="{{ current_user.email }}" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Update Email</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body">
         <h4 class="card-title">Change Password</h4>
         <form method="POST">
           <input type="hidden" name="action" value="password">
@@ -25,25 +54,11 @@
       </div>
     </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h4 class="card-title">Change Email</h4>
-        <form method="POST">
-          <input type="hidden" name="action" value="email">
-          <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" name="email" class="form-control"
-                   value="{{ current_user.email }}" required>
-          </div>
-          <button type="submit" class="btn btn-primary">Update Email</button>
-        </form>
-      </div>
-    </div>
-
     <div class="card">
       <div class="card-body">
         <h4 class="card-title">Account Info</h4>
         <p class="mb-1"><strong>Username:</strong> {{ current_user.username }}</p>
+        <p class="mb-1"><strong>Email:</strong> {{ current_user.email }}</p>
         <p class="mb-1"><strong>Role:</strong> <span class="badge bg-{{ 'danger' if current_user.is_admin() else 'secondary' }}">{{ current_user.role }}</span></p>
         <p class="mb-0"><strong>Joined:</strong> {{ current_user.created_at.strftime('%Y-%m-%d') }}</p>
       </div>
