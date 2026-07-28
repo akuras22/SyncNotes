@@ -34,20 +34,6 @@ select_option() {
     done
 }
 
-# ── Welcome ────────────────────────────────────────────────────────────────
-
-echo ""
-echo -e "${BLUE}══════════════════════════════════════${NC}"
-echo -e "${BLUE}       SyncNotes Installer${NC}"
-echo -e "${BLUE}══════════════════════════════════════${NC}"
-
-if select_option "What would you like to install?" \
-    "Server (Docker)" "Desktop App (Rust)"; then
-    install_server
-else
-    install_app
-fi
-
 # ── Server Installation ────────────────────────────────────────────────────
 
 install_server() {
@@ -231,3 +217,17 @@ install_app() {
     echo "  It will connect to https://notes.huebler.tech by default."
     echo ""
 }
+
+# ── Welcome ────────────────────────────────────────────────────────────────
+
+echo ""
+echo -e "${BLUE}══════════════════════════════════════${NC}"
+echo -e "${BLUE}       SyncNotes Installer${NC}"
+echo -e "${BLUE}══════════════════════════════════════${NC}"
+
+if select_option "What would you like to install?" \
+    "Server (Docker)" "Desktop App (Rust)"; then
+    install_server
+else
+    install_app
+fi
