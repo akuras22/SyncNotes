@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Admin — SyncNotes{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">User Management</h3>
+</div>
+
+<div class="card shadow">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Joined</th>
+          <th>Notes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <td>{{ u.username }}</td>
+            <td>{{ u.email }}</td>
+            <td>
+              <span class="badge bg-{{ 'danger' if u.is_admin() else 'secondary' }}">
+                {{ u.role }}
+              </span>
+            </td>
+            <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+            <td>{{ u.notes|length }}</td>
+            <td class="text-end">
+              {% if u.id != current_user.id %}
+                <form method="POST" action="{{ url_for('web.toggle_admin', user_id=u.id) }}" class="d-inline">
+                  <button type="submit" class="btn btn-sm btn-outline-warning">
+                    {{ 'Demote' if u.is_admin() else 'Make Admin' }}
+                  </button>
+                </form>
+                <form method="POST" action="{{ url_for('web.delete_user', user_id=u.id) }}"
+                      onsubmit="return confirm('Delete user {{ u.username }} and all their data?');" class="d-inline">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

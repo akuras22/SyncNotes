@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Settings — SyncNotes{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-md-6">
+    <div class="card shadow mb-4">
+      <div class="card-body">
+        <h4 class="card-title">Change Password</h4>
+        <form method="POST">
+          <input type="hidden" name="action" value="password">
+          <div class="mb-3">
+            <label class="form-label">Current Password</label>
+            <input type="password" name="current_password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">New Password</label>
+            <input type="password" name="new_password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Confirm New Password</label>
+            <input type="password" name="confirm_password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Update Password</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow mb-4">
+      <div class="card-body">
+        <h4 class="card-title">Change Email</h4>
+        <form method="POST">
+          <input type="hidden" name="action" value="email">
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control"
+                   value="{{ current_user.email }}" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Update Email</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow">
+      <div class="card-body">
+        <h4 class="card-title">Account Info</h4>
+        <p class="mb-1"><strong>Username:</strong> {{ current_user.username }}</p>
+        <p class="mb-1"><strong>Role:</strong> {{ current_user.role }}</p>
+        <p class="mb-0"><strong>Joined:</strong> {{ current_user.created_at.strftime('%Y-%m-%d') }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

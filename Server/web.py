@@ -1,11 +1,23 @@
 from datetime import datetime
+from functools import wraps
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
-from models import ApiToken, DeviceCode, NoteFile, db
+from models import ApiToken, DeviceCode, NoteFile, User, db
 
 web_bp = Blueprint('web', __name__)
+
+
+def admin_required(f):
+    @wraps(f)
+    @login_required
+    def decorated(*args, **kwargs):
+        if not current_user.is_admin():
+            flash('Admin access required', 'error')
+            return redirect(url_for('web.dashboard'))
+        return f(*args, **kwargs)
+    return decorated
 
 
 @web_bp.route('/')
@@ -135,4 +147,73 @@ def revoke_token(token_id):
     return redirect(url_for('web.api_tokens'))
 
 
-from models import User
+@web_bp.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    if request.method == 'POST':
+        action = request.form.get('action', '')
+
+        if action == 'password':
+            current_pw = request.form.get('current_password', '')
+            new_pw = request.form.get('new_password', '')
+            confirm = request.form.get('confirm_password', '')
+
+            if not current_user.check_password(current_pw):
+                flash('Current password is incorrect', 'error')
+            elif not new_pw:
+                flash('New password is required', 'error')
+            elif new_pw != confirm:
+                flash('Passwords do not match', 'error')
+            else:
+                current_user.set_password(new_pw)
+                db.session.commit()
+                flash('Password updated', 'success')
+
+        elif action == 'email':
+            email = request.form.get('email', '').strip()
+            if not email:
+                flash('Email is required', 'error')
+            elif (
+                User.query.filter_by(email=email).first()
+                and email != current_user.email
+            ):
+                flash('Email already in use', 'error')
+            else:
+                current_user.email = email
+                db.session.commit()
+                flash('Email updated', 'success')
+
+    return render_template('settings.html')
+
+
+@web_bp.route('/admin')
+@admin_required
+def admin_panel():
+    users = User.query.order_by(User.created_at.desc()).all()
+    return render_template('admin.html', users=users)
+
+
+@web_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    if user_id == current_user.id:
+        flash('Cannot delete yourself', 'error')
+        return redirect(url_for('web.admin_panel'))
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash(f'User {user.username} deleted', 'success')
+    return redirect(url_for('web.admin_panel'))
+
+
+@web_bp.route('/admin/users/<int:user_id>/toggle-admin', methods=['POST'])
+@admin_required
+def toggle_admin(user_id):
+    if user_id == current_user.id:
+        flash('Cannot change your own role', 'error')
+        return redirect(url_for('web.admin_panel'))
+    user = User.query.get_or_404(user_id)
+    user.role = 'user' if user.is_admin() else 'admin'
+    db.session.commit()
+    flash(f'{user.username} is now {"admin" if user.is_admin() else "user"}', 'success')
+    return redirect(url_for('web.admin_panel'))

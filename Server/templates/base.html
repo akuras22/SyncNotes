@@ -24,8 +24,13 @@
               <a class="nav-link" href="{{ url_for('web.authorize_device') }}">Devices</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('web.api_tokens') }}">API Tokens</a>
+              <a class="nav-link" href="{{ url_for('web.settings') }}">Settings</a>
             </li>
+            {% if current_user.is_admin() %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('web.admin_panel') }}">Admin</a>
+            </li>
+            {% endif %}
             <li class="nav-item">
               <span class="nav-link text-light">{{ current_user.username }}</span>
             </li>
