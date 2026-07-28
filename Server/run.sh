@@ -3,6 +3,12 @@ set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 
+if [ -f ../.env ]; then
+  set -a
+  source ../.env
+  set +a
+fi
+
 if [ ! -d venv ]; then
   python3 -m venv venv
 fi

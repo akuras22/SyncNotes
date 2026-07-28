@@ -1,0 +1,44 @@
+services:
+  syncnotes:
+    image: python:3.12-slim
+    container_name: syncnotes
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Server:/app
+      - syncnotes_uploads:/app/uploads
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+    working_dir: /app
+    command: >
+      sh -c "pip install --no-cache-dir -r requirements.txt &&
+             python app.py"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: syncnotes-db
+    env_file:
+      - .env
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=syncnotes
+      - MYSQL_USER=${DB_USER:-syncnotes}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-syncnotes}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+volumes:
+  syncnotes_uploads:
+  mysql_data:

@@ -1,0 +1,6 @@
+.env
+Server/instance/
+Server/uploads/
+Server/venv/
+__pycache__/
+*.pyc

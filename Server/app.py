@@ -1,5 +1,7 @@
 import os
+from urllib.parse import urlparse
 
+import pymysql
 from flask import Flask
 from flask_login import LoginManager
 
@@ -9,7 +11,26 @@ from models import db, User
 login_manager = LoginManager()
 
 
+def ensure_database():
+    if 'mysql' not in Config.SQLALCHEMY_DATABASE_URI:
+        return
+    conn = pymysql.connect(
+        host=Config.DB_HOST,
+        port=int(Config.DB_PORT),
+        user=Config.DB_USER,
+        password=Config.DB_PASSWORD,
+    )
+    with conn.cursor() as cursor:
+        cursor.execute(
+            f"CREATE DATABASE IF NOT EXISTS `{Config.DB_NAME}` "
+            f"CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+        )
+    conn.close()
+
+
 def create_app():
+    ensure_database()
+
     app = Flask(__name__)
     app.config.from_object(Config)
 
@@ -36,4 +57,4 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8000, debug=True)
