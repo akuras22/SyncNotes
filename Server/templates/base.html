@@ -12,7 +12,7 @@
     {% if current_user.is_authenticated %}
     <nav class="headerbar-nav">
       <a class="headerbar-btn{% if request.endpoint == 'web.dashboard' %} active{% endif %}" href="{{ url_for('web.dashboard') }}">Notes</a>
-      <a class="headerbar-btn{% if request.endpoint == 'web.authorize_device' %} active{% endif %}" href="{{ url_for('web.authorize_device') }}">Devices</a>
+      <a class="headerbar-btn{% if request.endpoint == 'web.authorize_device' %} active{% endif %}" href="{{ url_for('web.authorize_device') }}">Apps</a>
       <a class="headerbar-btn{% if request.endpoint == 'web.settings' %} active{% endif %}" href="{{ url_for('web.settings') }}">Settings</a>
       {% if current_user.is_admin() %}
       <a class="headerbar-btn{% if request.endpoint == 'web.admin_panel' %} active{% endif %}" href="{{ url_for('web.admin_panel') }}">Admin</a>

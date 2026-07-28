@@ -85,7 +85,8 @@ if exist "!INSTALL_DIR!" (
     set /p delbin="Remove binary at !INSTALL_DIR!? (y/N): "
     if /i "!delbin!"=="y" (
         rmdir /s /q "!INSTALL_DIR!" >nul
-        echo [OK] Binary removed.
+        del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\SyncNotes.lnk" 2>nul
+        echo [OK] Binary and shortcut removed.
     )
 )
 

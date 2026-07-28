@@ -42,18 +42,6 @@ confirm() {
     esac
 }
 
-echo ""
-echo -e "${BLUE}══════════════════════════════════════${NC}"
-echo -e "${BLUE}     SyncNotes Uninstaller (Linux)${NC}"
-echo -e "${BLUE}══════════════════════════════════════${NC}"
-
-if select_option "What would you like to uninstall?" \
-    "Server (Docker)" "Desktop App"; then
-    uninstall_server
-else
-    uninstall_app
-fi
-
 # ── Uninstall Server ───────────────────────────────────────────────────────
 
 uninstall_server() {
@@ -104,10 +92,6 @@ uninstall_server() {
 
     echo ""
     ok "Server uninstalled."
-    echo ""
-    echo "  To fully remove Docker images as well:"
-    echo "    docker rmi python:3.12-slim"
-    echo ""
 }
 
 # ── Uninstall App ──────────────────────────────────────────────────────────
@@ -145,6 +129,15 @@ uninstall_app() {
         fi
     fi
 
+    # Remove Desktop entry
+    DESKTOP_FILE="$HOME/.local/share/applications/syncnotes.desktop"
+    if [ -f "$DESKTOP_FILE" ]; then
+        if confirm "Remove Desktop Menu entry?"; then
+            rm -f "$DESKTOP_FILE"
+            ok "Desktop entry removed."
+        fi
+    fi
+
     # Remove PATH addition from shell config
     for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.config/fish/config.fish" "$HOME/.profile"; do
         if [ -f "$rc" ]; then
@@ -168,8 +161,18 @@ uninstall_app() {
 
     echo ""
     ok "Desktop app uninstalled."
-    echo ""
-    echo "  Note: system packages (gtk3, webkit2gtk, etc.) were left installed."
-    echo "  Remove them manually if no longer needed."
-    echo ""
 }
+
+# ── Main ───────────────────────────────────────────────────────────────────
+
+echo ""
+echo -e "${BLUE}══════════════════════════════════════${NC}"
+echo -e "${BLUE}     SyncNotes Uninstaller (Linux)${NC}"
+echo -e "${BLUE}══════════════════════════════════════${NC}"
+
+if select_option "What would you like to uninstall?" \
+    "Server (Docker)" "Desktop App"; then
+    uninstall_server
+else
+    uninstall_app
+fi

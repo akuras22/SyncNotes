@@ -146,6 +146,16 @@ if not exist "!INSTALL_DIR!" mkdir "!INSTALL_DIR!"
 copy "!BINARY!" "!INSTALL_DIR!\syncnotes.exe" >nul
 echo [OK] Installed to !INSTALL_DIR!\syncnotes.exe
 
+echo [INFO] Creating Start Menu shortcut...
+set SCRIPT="%TEMP%\SyncNotesShortcut.ps1"
+echo $ws = New-Object -ComObject WScript.Shell > %SCRIPT%
+echo $s = $ws.CreateShortcut("$env:APPDATA\Microsoft\Windows\Start Menu\Programs\SyncNotes.lnk") >> %SCRIPT%
+echo $s.TargetPath = "!INSTALL_DIR!\syncnotes.exe" >> %SCRIPT%
+echo $s.Save() >> %SCRIPT%
+powershell -ExecutionPolicy Bypass -File %SCRIPT% >nul 2>&1
+del %SCRIPT%
+echo [OK] Shortcut created.
+
 set "PATH_USER=%PATH%"
 echo !PATH_USER! | findstr /C:"!INSTALL_DIR!" >nul
 if %errorlevel% neq 0 (

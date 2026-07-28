@@ -283,6 +283,22 @@ install_app() {
     cp "$BINARY" "$INSTALL_DIR/syncnotes"
     ok "Installed to $INSTALL_DIR/syncnotes"
 
+    # Create Desktop Entry
+    info "Creating Desktop entry..."
+    DESKTOP_DIR="$HOME/.local/share/applications"
+    mkdir -p "$DESKTOP_DIR"
+    cat > "$DESKTOP_DIR/syncnotes.desktop" <<EOF
+[Desktop Entry]
+Name=SyncNotes
+Comment=Sync your Rnotes to SyncNotes server
+Exec=$INSTALL_DIR/syncnotes
+Terminal=false
+Type=Application
+Categories=Utility;
+Icon=document-send
+EOF
+    ok "Desktop entry created at $DESKTOP_DIR/syncnotes.desktop"
+
     if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
         SHELL_CONFIG="$HOME/.$(basename "$SHELL")rc"
         if [ -f "$SHELL_CONFIG" ] || [ -f "$HOME/.profile" ]; then
