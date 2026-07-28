@@ -315,7 +315,7 @@ impl eframe::App for SetupWizard {
                         config.save();
 
                         if self.auto_start {
-                            if let Ok(mut launcher) = auto_launch::AutoLaunchBuilder::new()
+                            if let Ok(launcher) = auto_launch::AutoLaunchBuilder::new()
                                 .set_app_name("SyncNotes")
                                 .set_app_path(
                                     std::env::current_exe()

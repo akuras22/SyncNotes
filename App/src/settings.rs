@@ -93,7 +93,7 @@ impl eframe::App for SettingsWindow {
                                     )
                                     .set_args(&["--daemon"])
                                     .build();
-                            if let Ok(mut l) = launcher {
+                            if let Ok(l) = launcher {
                                 if self.config.autostart {
                                     l.enable().ok();
                                 } else {
