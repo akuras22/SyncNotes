@@ -37,10 +37,10 @@ def login():
         return redirect(url_for('web.dashboard'))
 
     if request.method == 'POST':
-        login_str = request.form.get('username', '').strip()
+        login_input = request.form.get('login', '').strip()
         password = request.form.get('password', '')
         user = User.query.filter(
-            (User.username == login_str) | (User.email == login_str)
+            (User.username == login_input) | (User.email == login_input)
         ).first()
         if user and user.check_password(password):
             if user.is_locked():
@@ -49,7 +49,7 @@ def login():
                 login_user(user)
                 next_page = request.args.get('next')
                 return redirect(next_page or url_for('web.dashboard'))
-        flash('Invalid username/email or password', 'error')
+        flash('Invalid login or password', 'error')
     return render_template('login.html')
 
 
@@ -158,23 +158,7 @@ def settings():
     if request.method == 'POST':
         action = request.form.get('action', '')
 
-        if action == 'password':
-            current_pw = request.form.get('current_password', '')
-            new_pw = request.form.get('new_password', '')
-            confirm = request.form.get('confirm_password', '')
-
-            if not current_user.check_password(current_pw):
-                flash('Current password is incorrect', 'error')
-            elif not new_pw:
-                flash('New password is required', 'error')
-            elif new_pw != confirm:
-                flash('Passwords do not match', 'error')
-            else:
-                current_user.set_password(new_pw)
-                db.session.commit()
-                flash('Password updated', 'success')
-
-        elif action == 'username':
+        if action == 'username':
             username = request.form.get('username', '').strip()
             if not username:
                 flash('Username is required', 'error')
@@ -201,6 +185,22 @@ def settings():
                 current_user.email = email
                 db.session.commit()
                 flash('Email updated', 'success')
+
+        elif action == 'password':
+            current_pw = request.form.get('current_password', '')
+            new_pw = request.form.get('new_password', '')
+            confirm = request.form.get('confirm_password', '')
+
+            if not current_user.check_password(current_pw):
+                flash('Current password is incorrect', 'error')
+            elif not new_pw:
+                flash('New password is required', 'error')
+            elif new_pw != confirm:
+                flash('Passwords do not match', 'error')
+            else:
+                current_user.set_password(new_pw)
+                db.session.commit()
+                flash('Password updated', 'success')
 
     return render_template('settings.html')
 

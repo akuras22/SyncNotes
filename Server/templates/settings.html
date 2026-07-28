@@ -1,67 +1,61 @@
 {% extends "base.html" %}
 {% block title %}Settings — SyncNotes{% endblock %}
 {% block content %}
-<div class="row justify-content-center mt-4">
-  <div class="col-md-6">
-    <div class="card mb-4">
-      <div class="card-body">
-        <h4 class="card-title">Change Username</h4>
-        <form method="POST">
-          <input type="hidden" name="action" value="username">
-          <div class="mb-3">
-            <label class="form-label">Username</label>
-            <input type="text" name="username" class="form-control" value="{{ current_user.username }}" required>
+<div class="panel" style="max-width: 520px;">
+  <div class="panel-header">Account Settings</div>
+  <div class="panel-body">
+    <div class="settings-section">
+      <form method="POST">
+        <input type="hidden" name="action" value="username">
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <div class="form-row">
+            <input class="form-input" id="username" type="text" name="username" value="{{ current_user.username }}" required>
+            <button class="btn btn-primary" type="submit">Update</button>
           </div>
-          <button type="submit" class="btn btn-primary">Update Username</button>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h4 class="card-title">Change Email</h4>
-        <form method="POST">
-          <input type="hidden" name="action" value="email">
-          <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" name="email" class="form-control"
-                   value="{{ current_user.email }}" required>
+    <div class="settings-section">
+      <form method="POST">
+        <input type="hidden" name="action" value="email">
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <div class="form-row">
+            <input class="form-input" id="email" type="email" name="email" value="{{ current_user.email }}" required>
+            <button class="btn btn-primary" type="submit">Update</button>
           </div>
-          <button type="submit" class="btn btn-primary">Update Email</button>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h4 class="card-title">Change Password</h4>
-        <form method="POST">
-          <input type="hidden" name="action" value="password">
-          <div class="mb-3">
-            <label class="form-label">Current Password</label>
-            <input type="password" name="current_password" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">New Password</label>
-            <input type="password" name="new_password" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Confirm New Password</label>
-            <input type="password" name="confirm_password" class="form-control" required>
-          </div>
-          <button type="submit" class="btn btn-primary">Update Password</button>
-        </form>
-      </div>
+    <div class="settings-section">
+      <form method="POST">
+        <input type="hidden" name="action" value="password">
+        <div class="form-group">
+          <label class="form-label" for="current_password">Current Password</label>
+          <input class="form-input" id="current_password" type="password" name="current_password" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="new_password">New Password</label>
+          <input class="form-input" id="new_password" type="password" name="new_password" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="confirm_password">Confirm New Password</label>
+          <input class="form-input" id="confirm_password" type="password" name="confirm_password" required>
+        </div>
+        <button class="btn btn-primary" type="submit">Update Password</button>
+      </form>
     </div>
 
-    <div class="card">
-      <div class="card-body">
-        <h4 class="card-title">Account Info</h4>
-        <p class="mb-1"><strong>Username:</strong> {{ current_user.username }}</p>
-        <p class="mb-1"><strong>Email:</strong> {{ current_user.email }}</p>
-        <p class="mb-1"><strong>Role:</strong> <span class="badge bg-{{ 'danger' if current_user.is_admin() else 'secondary' }}">{{ current_user.role }}</span></p>
-        <p class="mb-0"><strong>Joined:</strong> {{ current_user.created_at.strftime('%Y-%m-%d') }}</p>
-      </div>
+    <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;">
+
+    <div>
+      <p class="mb-1" style="font-size:13px;"><strong>Username:</strong> {{ current_user.username }}</p>
+      <p class="mb-1" style="font-size:13px;"><strong>Email:</strong> {{ current_user.email }}</p>
+      <p class="mb-1" style="font-size:13px;"><strong>Role:</strong> <span class="badge badge-{{ 'red' if current_user.is_admin() else 'gray' }}">{{ current_user.role }}</span></p>
+      <p class="mb-0" style="font-size:13px;"><strong>Joined:</strong> {{ current_user.created_at.strftime('%Y-%m-%d') }}</p>
     </div>
   </div>
 </div>

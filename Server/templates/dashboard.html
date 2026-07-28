@@ -1,77 +1,66 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — SyncNotes{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="mb-0" style="font-weight:700;">My Notes</h3>
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">+ Upload</button>
+<div class="flex items-center justify-between mb-4">
+  <h3 style="font-size:16px;font-weight:700;margin:0;">My Notes</h3>
+  <button class="btn btn-primary" onclick="document.getElementById('uploadModal').style.display='flex'">+ Upload</button>
 </div>
 
 {% if notes %}
-  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+  <div class="note-grid">
     {% for note in notes %}
-      <div class="col">
-        <div class="card h-100">
-          <div class="card-body">
-            <h5 class="card-title text-truncate">{{ note.name }}</h5>
-            <p class="card-text small text-muted">
-              {{ note.updated_at.strftime('%Y-%m-%d %H:%M') }}
-              {% if note.file_size %} &middot; {{ (note.file_size / 1024)|round(1) }} KB{% endif %}
-            </p>
-            <div class="d-flex gap-2">
-              {% if note.original_filename %}
-                <a href="{{ url_for('api.download_original', note_id=note.id) }}" class="btn btn-sm btn-outline-secondary">
-                  .rnote
-                </a>
-              {% endif %}
-              {% if note.pdf_filename %}
-                <a href="{{ url_for('api.view_pdf', note_id=note.id) }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                  PDF
-                </a>
-              {% endif %}
-              <form method="POST" action="{{ url_for('api.delete_note', note_id=note.id) }}"
-                    onsubmit="return confirm('Delete {{ note.name }}?');" class="ms-auto">
-                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
-            </div>
-          </div>
+      <div class="note-card">
+        <h4 class="note-card-title">{{ note.name }}</h4>
+        <p class="note-card-meta">
+          {{ note.updated_at.strftime('%Y-%m-%d %H:%M') }}
+          {% if note.file_size %} &middot; {{ (note.file_size / 1024)|round(1) }} KB{% endif %}
+        </p>
+        <div class="note-card-actions">
+          {% if note.original_filename %}
+            <a class="btn btn-sm btn-default" href="{{ url_for('api.download_original', note_id=note.id) }}">.rnote</a>
+          {% endif %}
+          {% if note.pdf_filename %}
+            <a class="btn btn-sm btn-default" href="{{ url_for('api.view_pdf', note_id=note.id) }}" target="_blank">PDF</a>
+          {% endif %}
+          <form method="POST" action="{{ url_for('api.delete_note', note_id=note.id) }}"
+                onsubmit="return confirm('Delete {{ note.name }}?');" style="margin-left:auto;">
+            <button type="submit" class="btn btn-sm btn-destructive">Delete</button>
+          </form>
         </div>
       </div>
     {% endfor %}
   </div>
 {% else %}
-  <div class="text-center py-5">
-    <div style="font-size:3rem;margin-bottom:1rem;">📝</div>
-    <p class="text-muted fs-5">No notes yet. Upload your first one!</p>
+  <div class="text-center" style="padding:60px 0;color:var(--text-secondary);">
+    <p style="font-size:15px;">No notes yet. Upload your first one!</p>
   </div>
 {% endif %}
 
-<div class="modal fade" id="uploadModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <form method="POST" action="{{ url_for('api.upload_note') }}" enctype="multipart/form-data">
-        <div class="modal-header">
-          <h5 class="modal-title">Upload Note</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="modal-overlay" id="uploadModal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" onclick="event.stopPropagation()">
+    <form method="POST" action="{{ url_for('api.upload_note') }}" enctype="multipart/form-data">
+      <div class="modal-header">
+        <h3 class="modal-title">Upload Note</h3>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input class="form-input" type="text" name="name" placeholder="Leave blank to use filename">
         </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Name</label>
-            <input type="text" name="name" class="form-control" placeholder="Leave blank to use filename">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Original File (.rnote)</label>
-            <input type="file" name="original" class="form-control" accept=".rnote">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">PDF Export</label>
-            <input type="file" name="pdf" class="form-control" accept=".pdf">
-          </div>
+        <div class="form-group">
+          <label class="form-label">Original File (.rnote)</label>
+          <input class="form-input" type="file" name="original" accept=".rnote" style="padding:6px;">
         </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Upload</button>
+        <div class="form-group">
+          <label class="form-label">PDF Export</label>
+          <input class="form-input" type="file" name="pdf" accept=".pdf" style="padding:6px;">
         </div>
-      </form>
-    </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" onclick="document.getElementById('uploadModal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-primary">Upload</button>
+      </div>
+    </form>
   </div>
 </div>
 {% endblock %}
