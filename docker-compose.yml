@@ -1,0 +1,21 @@
+services:
+  syncnotes:
+    image: python:3.12-slim
+    container_name: syncnotes
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./Server:/app
+      - syncnotes_data:/app/uploads
+      - syncnotes_db:/app/instance
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-to-a-random-secret}
+    working_dir: /app
+    command: >
+      sh -c "pip install --no-cache-dir -r requirements.txt &&
+             python app.py"
+    restart: unless-stopped
+
+volumes:
+  syncnotes_data:
+  syncnotes_db:
