@@ -14,9 +14,22 @@ body {
 }
 
 .navbar {
-  background: rgba(15, 16, 35, 0.85) !important;
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border);
+  background: rgba(30, 30, 40, 0.95) !important;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 1px 0 rgba(255,255,255,.06), 0 4px 20px rgba(0,0,0,.4);
+}
+
+.navbar .nav-link {
+  color: #cdcdd8 !important;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: .4rem .8rem !important;
+  transition: background .15s ease;
+}
+
+.navbar .nav-link:hover {
+  background: rgba(255,255,255,.06);
+  color: #fff !important;
 }
 
 .navbar-brand {
@@ -26,6 +39,12 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.navbar .nav-link.text-light {
+  background: rgba(108, 92, 231, .15) !important;
+  color: #a29bfe !important;
+  font-weight: 600;
 }
 
 .card {
