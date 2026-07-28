@@ -3,9 +3,9 @@ set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 
-if [ -f ../.env ]; then
+if [ -f .env ]; then
   set -a
-  source ../.env
+  source .env
   set +a
 fi
 

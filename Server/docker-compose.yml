@@ -5,7 +5,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./Server:/app
+      - .:/app
       - syncnotes_uploads:/app/uploads
     env_file:
       - .env

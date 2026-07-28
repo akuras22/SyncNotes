@@ -1,6 +1,6 @@
 .env
-Server/instance/
-Server/uploads/
-Server/venv/
+instance/
+uploads/
+venv/
 __pycache__/
 *.pyc
