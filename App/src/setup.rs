@@ -104,10 +104,9 @@ impl eframe::App for SetupWizard {
                         ui.label("Enter this code on the authorization page:");
                         ui.add_space(4.0);
 
-                        let round = egui::CornerRadius::same(8);
                         let frame = egui::Frame {
                             fill: egui::Color32::from_rgb(0x2a, 0x2a, 0x2a),
-                            rounding: round,
+                            corner_radius: egui::CornerRadius::same(8),
                             ..Default::default()
                         };
                         frame.show(ui, |ui| {
@@ -349,7 +348,7 @@ impl eframe::App for SetupWizard {
                         )
                         .clicked()
                     {
-                        _frame.viewport_mut().close();
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                 }
             }

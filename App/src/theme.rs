@@ -1,4 +1,4 @@
-use egui::{Color32, CornerRadius, Rounding, Style, Visuals};
+use egui::{Color32, CornerRadius, Style, Visuals};
 
 pub fn dark_theme() -> Style {
     Style {

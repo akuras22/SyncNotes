@@ -33,10 +33,9 @@ impl eframe::App for SettingsWindow {
             ui.heading("SyncNotes Settings");
             ui.add_space(16.0);
 
-            let round = egui::CornerRadius::same(8);
             let frame = egui::Frame {
                 fill: egui::Color32::from_rgb(0x2d, 0x2d, 0x2d),
-                rounding: round,
+                corner_radius: egui::CornerRadius::same(8),
                 stroke: egui::Stroke::new(
                     1.0,
                     egui::Color32::from_rgb(0x4a, 0x4a, 0x4a),
