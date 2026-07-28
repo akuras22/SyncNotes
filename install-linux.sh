@@ -34,6 +34,99 @@ select_option() {
     done
 }
 
+# ── Distro detection ───────────────────────────────────────────────────────
+
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    else
+        echo "unknown"
+    fi
+}
+
+PKG_MANAGER=""
+PKG_UPDATE=""
+PKG_INSTALL=""
+PKGS_APP=(libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev)
+
+setup_pkg_manager() {
+    local distro
+    distro=$(detect_distro)
+
+    case "$distro" in
+        debian|ubuntu|linuxmint|pop|elementary|zorin|raspbian)
+            PKG_MANAGER="apt"
+            PKG_UPDATE="sudo apt-get update -qq"
+            PKG_INSTALL="sudo apt-get install -y -qq"
+            PKGS_APP=(libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev)
+            ;;
+        arch|manjaro|endeavouros|arco|archarm|cachyos)
+            PKG_MANAGER="pacman"
+            PKG_UPDATE="sudo pacman -Sy --noconfirm"
+            PKG_INSTALL="sudo pacman -S --noconfirm"
+            PKGS_APP=(gtk3 webkit2gtk-4.1 librsvg)
+            ;;
+        fedora)
+            PKG_MANAGER="dnf"
+            PKG_UPDATE="sudo dnf check-update -q || true"
+            PKG_INSTALL="sudo dnf install -y"
+            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel)
+            ;;
+        rhel|centos|rocky|almalinux)
+            PKG_MANAGER="dnf"
+            PKG_UPDATE="sudo dnf check-update -q || true"
+            PKG_INSTALL="sudo dnf install -y"
+            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel)
+            ;;
+        opensuse*|suse)
+            PKG_MANAGER="zypper"
+            PKG_UPDATE="sudo zypper refresh"
+            PKG_INSTALL="sudo zypper install -y"
+            PKGS_APP=(gtk3-devel webkit2gtk4-devel librsvg-devel)
+            ;;
+        void)
+            PKG_MANAGER="xbps"
+            PKG_UPDATE="sudo xbps-install -S"
+            PKG_INSTALL="sudo xbps-install -y"
+            PKGS_APP=(gtk3-devel webkit2gtk-devel librsvg-devel)
+            ;;
+        alpine)
+            PKG_MANAGER="apk"
+            PKG_UPDATE="sudo apk update"
+            PKG_INSTALL="sudo apk add"
+            PKGS_APP=(gtk3-dev webkit2gtk-dev librsvg-dev)
+            ;;
+        solus)
+            PKG_MANAGER="eopkg"
+            PKG_UPDATE="sudo eopkg update-repo"
+            PKG_INSTALL="sudo eopkg install"
+            PKGS_APP=(libgtk-3-devel libwebkit2gtk-4.1-devel librsvg-devel)
+            ;;
+        *)
+            PKG_MANAGER="unknown"
+            ;;
+    esac
+}
+
+install_packages() {
+    local pkgs=("$@")
+    case "$PKG_MANAGER" in
+        apt|pacman|dnf|zypper|xbps|apk|eopkg)
+            info "Installing: ${pkgs[*]}"
+            $PKG_INSTALL "${pkgs[@]}"
+            ;;
+        *)
+            warn "Unknown package manager. Please install these manually:"
+            for p in "${pkgs[@]}"; do echo "  - $p"; done
+            echo ""
+            if ! select_option "Continue anyway?" "Yes" "Abort"; then
+                exit 1
+            fi
+            ;;
+    esac
+}
+
 # ── Server Installation ────────────────────────────────────────────────────
 
 install_server() {
@@ -52,12 +145,10 @@ install_server() {
         exit 1
     fi
 
-    # Create .env from example if needed
     if [ ! -f "$ROOT_DIR/Server/.env" ]; then
         info "Creating Server/.env from .env.example..."
         cp "$ROOT_DIR/Server/.env.example" "$ROOT_DIR/Server/.env"
 
-        # Generate a random secret key
         SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))" 2>/dev/null || openssl rand -hex 32 2>/dev/null || echo "change-me-to-a-random-key")
         sed -i "s/generate-a-random-key-here/$SECRET/" "$ROOT_DIR/Server/.env"
 
@@ -93,7 +184,6 @@ install_server() {
             DB_USER=${DB_USER:-syncnotes}
             read -rsp "DB password: " DB_PASS
             echo ""
-
             sed -i "s/DB_HOST=localhost/DB_HOST=$DB_HOST/" "$ROOT_DIR/Server/.env"
             sed -i "s/DB_PORT=3306/DB_PORT=$DB_PORT/" "$ROOT_DIR/Server/.env"
             sed -i "s/DB_NAME=syncnotes/DB_NAME=$DB_NAME/" "$ROOT_DIR/Server/.env"
@@ -107,7 +197,6 @@ install_server() {
         info "Server/.env already exists, keeping it."
     fi
 
-    # Create necessary directories
     mkdir -p "$ROOT_DIR/Server/instance"
     mkdir -p "$ROOT_DIR/Server/uploads"
 
@@ -138,7 +227,6 @@ install_app() {
     echo ""
     info "Starting desktop app installation..."
 
-    # Install Rust if needed
     if ! command -v cargo &>/dev/null; then
         info "Rust is not installed. Installing via rustup..."
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -148,20 +236,23 @@ install_app() {
         ok "Rust is already installed ($(cargo --version))."
     fi
 
-    # System dependencies for egui/eframe on Linux
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        setup_pkg_manager
         info "Checking system dependencies for the GUI app..."
         MISSING=""
-        for pkg in libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev; do
-            if ! dpkg -s "$pkg" &>/dev/null 2>&1; then
+        for pkg in "${PKGS_APP[@]}"; do
+            ok "Will install: $pkg"
+            if ! dpkg -s "$pkg" &>/dev/null 2>&1 && ! pacman -Qi "$pkg" &>/dev/null 2>&1 && ! rpm -q "$pkg" &>/dev/null 2>&1; then
                 MISSING="$MISSING $pkg"
             fi
-        done
+        done 2>/dev/null || true
 
         if [ -n "$MISSING" ]; then
-            warn "Missing dependencies:$MISSING"
-            if select_option "Install missing packages via apt?" "Yes" "Skip (may fail)"; then
-                sudo apt-get update -qq && sudo apt-get install -y -qq $MISSING
+            warn "Missing system dependencies: $MISSING"
+            if select_option "Install missing packages?" "Yes" "Skip (may fail)"; then
+                $PKG_UPDATE
+                IFS=" " read -ra PKG_ARRAY <<< "$MISSING"
+                install_packages "${PKG_ARRAY[@]}"
                 ok "Dependencies installed."
             fi
         else
@@ -172,10 +263,8 @@ install_app() {
     echo ""
     info "Building SyncNotes app (this may take a few minutes)..."
     cd "$ROOT_DIR/App"
-
     cargo build --release
 
-    # Install the binary
     BINARY="$ROOT_DIR/App/target/release/syncnotes-app"
     if [ ! -f "$BINARY" ]; then
         err "Build failed — binary not found at $BINARY"
@@ -194,7 +283,6 @@ install_app() {
     cp "$BINARY" "$INSTALL_DIR/syncnotes"
     ok "Installed to $INSTALL_DIR/syncnotes"
 
-    # Add to PATH if needed
     if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
         SHELL_CONFIG="$HOME/.$(basename "$SHELL")rc"
         if [ -f "$SHELL_CONFIG" ] || [ -f "$HOME/.profile" ]; then
