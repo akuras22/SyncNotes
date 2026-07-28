@@ -3,7 +3,7 @@ services:
     image: python:3.12-slim
     container_name: syncnotes
     ports:
-      - "8000:8000"
+      - "2394:2394"
     volumes:
       - .:/app
       - syncnotes_uploads:/app/uploads
