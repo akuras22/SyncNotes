@@ -1,52 +1,107 @@
 {% extends "base.html" %}
 {% block title %}Admin — SyncNotes{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h3 class="mb-0">User Management</h3>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="mb-0" style="font-weight:700;">User Management</h3>
+  <span class="text-muted small">{{ users|length }} user{{ '' if users|length == 1 else 's' }}</span>
 </div>
 
-<div class="card shadow">
+<div class="card">
   <div class="card-body p-0">
-    <table class="table table-hover mb-0">
-      <thead>
-        <tr>
-          <th>Username</th>
-          <th>Email</th>
-          <th>Role</th>
-          <th>Joined</th>
-          <th>Notes</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for u in users %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
           <tr>
-            <td>{{ u.username }}</td>
-            <td>{{ u.email }}</td>
-            <td>
-              <span class="badge bg-{{ 'danger' if u.is_admin() else 'secondary' }}">
-                {{ u.role }}
-              </span>
-            </td>
-            <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
-            <td>{{ u.notes|length }}</td>
-            <td class="text-end">
-              {% if u.id != current_user.id %}
-                <form method="POST" action="{{ url_for('web.toggle_admin', user_id=u.id) }}" class="d-inline">
-                  <button type="submit" class="btn btn-sm btn-outline-warning">
-                    {{ 'Demote' if u.is_admin() else 'Make Admin' }}
-                  </button>
-                </form>
-                <form method="POST" action="{{ url_for('web.delete_user', user_id=u.id) }}"
-                      onsubmit="return confirm('Delete user {{ u.username }} and all their data?');" class="d-inline">
-                  <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                </form>
-              {% endif %}
-            </td>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th>Notes</th>
+            <th class="text-end">Actions</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for u in users %}
+            <tr class="{{ 'opacity-50' if u.is_locked() }}">
+              <td>{{ u.username }}</td>
+              <td>{{ u.email }}</td>
+              <td>
+                <span class="badge bg-{{ 'danger' if u.is_admin() else 'secondary' }}">
+                  {{ u.role }}
+                </span>
+              </td>
+              <td>
+                {% if u.is_locked() %}
+                  <span class="badge bg-warning text-dark">Locked</span>
+                {% else %}
+                  <span class="badge bg-success">Active</span>
+                {% endif %}
+              </td>
+              <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+              <td>{{ u.notes|length }}</td>
+              <td class="text-end">
+                {% if u.id != current_user.id %}
+                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                          data-bs-target="#editModal-{{ u.id }}">Edit</button>
+                  <form method="POST" action="{{ url_for('web.toggle_admin', user_id=u.id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                      {{ 'Demote' if u.is_admin() else 'Make Admin' }}
+                    </button>
+                  </form>
+                  <form method="POST" action="{{ url_for('web.toggle_lock', user_id=u.id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-{{ 'success' if u.is_locked() else 'secondary' }}">
+                      {{ 'Unlock' if u.is_locked() else 'Lock' }}
+                    </button>
+                  </form>
+                  <form method="POST" action="{{ url_for('web.delete_user', user_id=u.id) }}"
+                        onsubmit="return confirm('Delete user {{ u.username }} and all their data?');" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                {% else %}
+                  <span class="text-muted small">You</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
+
+{% for u in users %}
+{% if u.id != current_user.id %}
+<div class="modal fade" id="editModal-{{ u.id }}" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('web.edit_user', user_id=u.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit User: {{ u.username }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" value="{{ u.username }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" value="{{ u.email }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">New Password <small class="text-muted">(leave blank to keep current)</small></label>
+            <input type="password" name="password" class="form-control" placeholder="New password">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
 {% endblock %}

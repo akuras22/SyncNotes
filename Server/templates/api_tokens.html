@@ -3,7 +3,7 @@
 {% block content %}
 <div class="row justify-content-center mt-4">
   <div class="col-md-6">
-    <div class="card shadow mb-4">
+    <div class="card mb-4">
       <div class="card-body">
         <h4 class="card-title">Create API Token</h4>
         <form method="POST">
@@ -15,12 +15,12 @@
       </div>
     </div>
 
-    <div class="card shadow">
+    <div class="card">
       <div class="card-body">
         <h4 class="card-title">Your Tokens</h4>
         {% if tokens %}
           <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover mb-0">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -35,7 +35,7 @@
                     <td>{{ token.name }}</td>
                     <td>{{ token.created_at.strftime('%Y-%m-%d') }}</td>
                     <td>{{ token.last_used_at.strftime('%Y-%m-%d %H:%M') if token.last_used_at else 'Never' }}</td>
-                    <td>
+                    <td class="text-end">
                       <form method="POST" action="{{ url_for('web.revoke_token', token_id=token.id) }}"
                             onsubmit="return confirm('Revoke this token?');">
                         <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>

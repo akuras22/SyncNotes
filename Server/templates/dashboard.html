@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — SyncNotes{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h3 class="mb-0">My Notes</h3>
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">Upload</button>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="mb-0" style="font-weight:700;">My Notes</h3>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">+ Upload</button>
 </div>
 
 {% if notes %}
   <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
     {% for note in notes %}
       <div class="col">
-        <div class="card shadow-sm h-100">
+        <div class="card h-100">
           <div class="card-body">
             <h5 class="card-title text-truncate">{{ note.name }}</h5>
             <p class="card-text small text-muted">
@@ -40,12 +40,13 @@
   </div>
 {% else %}
   <div class="text-center py-5">
+    <div style="font-size:3rem;margin-bottom:1rem;">📝</div>
     <p class="text-muted fs-5">No notes yet. Upload your first one!</p>
   </div>
 {% endif %}
 
 <div class="modal fade" id="uploadModal" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <form method="POST" action="{{ url_for('api.upload_note') }}" enctype="multipart/form-data">
         <div class="modal-header">

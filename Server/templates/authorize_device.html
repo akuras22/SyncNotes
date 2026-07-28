@@ -3,7 +3,7 @@
 {% block content %}
 <div class="row justify-content-center mt-4">
   <div class="col-md-6">
-    <div class="card shadow mb-4">
+    <div class="card mb-4">
       <div class="card-body">
         <h4 class="card-title">Authorize a Device</h4>
         <p class="text-muted">Enter the code shown on your device to link it to your account.</p>
@@ -18,20 +18,20 @@
       </div>
     </div>
 
-    <div class="card shadow mb-4">
+    <div class="card mb-4">
       <div class="card-body">
         <h4 class="card-title">Pending Requests</h4>
         <p class="text-muted">{{ pending }} device code{{ '' if pending == 1 else 's' }} waiting for authorization.</p>
       </div>
     </div>
 
-    <div class="card shadow">
+    <div class="card">
       <div class="card-body">
         <h4 class="card-title">Authorized Devices</h4>
         {% if tokens %}
           <ul class="list-group list-group-flush">
             {% for token in tokens if token.name.startswith('Device:') %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                 {{ token.name[8:] }}
                 <small class="text-muted">Created {{ token.created_at.strftime('%Y-%m-%d') }}</small>
               </li>

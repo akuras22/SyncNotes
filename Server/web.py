@@ -41,9 +41,12 @@ def login():
         password = request.form.get('password', '')
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            login_user(user)
-            next_page = request.args.get('next')
-            return redirect(next_page or url_for('web.dashboard'))
+            if user.is_locked():
+                flash('Account is locked. Contact an admin.', 'error')
+            else:
+                login_user(user)
+                next_page = request.args.get('next')
+                return redirect(next_page or url_for('web.dashboard'))
         flash('Invalid username or password', 'error')
     return render_template('login.html')
 
@@ -216,4 +219,47 @@ def toggle_admin(user_id):
     user.role = 'user' if user.is_admin() else 'admin'
     db.session.commit()
     flash(f'{user.username} is now {"admin" if user.is_admin() else "user"}', 'success')
+    return redirect(url_for('web.admin_panel'))
+
+
+@web_bp.route('/admin/users/<int:user_id>/edit', methods=['POST'])
+@admin_required
+def edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip()
+
+    if username and username != user.username:
+        if User.query.filter_by(username=username).first():
+            flash('Username already taken', 'error')
+            return redirect(url_for('web.admin_panel'))
+        user.username = username
+
+    if email and email != user.email:
+        if User.query.filter_by(email=email).first():
+            flash('Email already in use', 'error')
+            return redirect(url_for('web.admin_panel'))
+        user.email = email
+
+    new_pw = request.form.get('password', '')
+    if new_pw:
+        user.set_password(new_pw)
+
+    db.session.commit()
+    flash(f'User {user.username} updated', 'success')
+    return redirect(url_for('web.admin_panel'))
+
+
+@web_bp.route('/admin/users/<int:user_id>/toggle-lock', methods=['POST'])
+@admin_required
+def toggle_lock(user_id):
+    if user_id == current_user.id:
+        flash('Cannot lock yourself', 'error')
+        return redirect(url_for('web.admin_panel'))
+    user = User.query.get_or_404(user_id)
+    user.locked = not user.locked
+    db.session.commit()
+    status = 'locked' if user.locked else 'unlocked'
+    flash(f'{user.username} {status}', 'success')
     return redirect(url_for('web.admin_panel'))
