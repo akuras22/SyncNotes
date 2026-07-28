@@ -30,8 +30,9 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background: var(--bg);
   color: var(--text);
-  line-height: 1.5;
+  line-height: 1.6;
   min-height: 100vh;
+  font-size: 16px;
 }
 
 /* ── HeaderBar (GTK-style top bar) ── */
@@ -39,8 +40,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 48px;
-  padding: 0 12px;
+  height: 60px;
+  padding: 0 20px;
   position: relative;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -49,8 +50,8 @@ body {
 
 .headerbar-title {
   position: absolute;
-  left: 12px;
-  font-size: 14px;
+  left: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.01em;
@@ -60,20 +61,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 4px;
 }
 
 .headerbar-nav:last-child {
   position: absolute;
-  right: 12px;
+  right: 20px;
 }
 
 .headerbar-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 10px;
-  font-size: 13px;
+  padding: 8px 16px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text);
   background: transparent;
@@ -101,8 +102,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  font-size: 13px;
+  padding: 6px 14px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
   background: var(--bg-alt);
@@ -115,8 +116,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 6px 14px;
-  font-size: 13px;
+  padding: 8px 20px;
+  font-size: 14px;
   font-weight: 500;
   font-family: inherit;
   border: 1px solid transparent;
@@ -124,7 +125,7 @@ body {
   cursor: pointer;
   text-decoration: none;
   transition: all var(--transition);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .btn:active {
@@ -180,7 +181,7 @@ body {
   background: transparent;
   color: var(--text);
   border: none;
-  padding: 5px 10px;
+  padding: 8px 14px;
 }
 
 .btn-flat:hover {
@@ -192,29 +193,29 @@ body {
 }
 
 .btn-sm {
-  padding: 4px 10px;
-  font-size: 12px;
+  padding: 6px 14px;
+  font-size: 13px;
 }
 
 /* ── Forms ── */
 .form-group {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .form-label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
 .form-input {
   width: 100%;
-  padding: 7px 10px;
-  font-size: 14px;
+  padding: 10px 14px;
+  font-size: 15px;
   font-family: inherit;
   color: var(--text);
   background: var(--surface);
@@ -235,8 +236,8 @@ body {
 
 /* ── Cards / Windows ── */
 .window {
-  max-width: 480px;
-  margin: 40px auto;
+  max-width: 600px;
+  margin: 48px auto;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -244,31 +245,31 @@ body {
 }
 
 .window-header {
-  padding: 16px 20px 0;
+  padding: 20px 24px 0;
 }
 
 .window-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   margin: 0;
 }
 
 .window-subtitle {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
-  margin: 2px 0 0;
+  margin: 4px 0 0;
 }
 
 .window-body {
-  padding: 16px 20px 20px;
+  padding: 20px 24px 24px;
 }
 
 .window-footer {
-  padding: 12px 20px;
+  padding: 16px 24px;
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 8px;
 }
 
 /* ── Content panels ── */
@@ -280,22 +281,22 @@ body {
 }
 
 .panel-header {
-  padding: 14px 16px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--border);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
 }
 
 .panel-body {
-  padding: 16px;
+  padding: 20px;
 }
 
 /* ── Alerts / Toasts ── */
 .alert {
   padding: 10px 14px;
   border-radius: var(--radius-sm);
-  font-size: 13px;
-  margin-bottom: 12px;
+  font-size: 14px;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -318,8 +319,8 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 16px;
-  padding: 0 2px;
+  font-size: 18px;
+  padding: 0 4px;
   opacity: 0.6;
   color: inherit;
 }
@@ -334,13 +335,13 @@ body {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 table th {
   text-align: left;
-  padding: 10px 12px;
-  font-size: 11px;
+  padding: 12px 16px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -349,7 +350,7 @@ table th {
 }
 
 table td {
-  padding: 10px 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
@@ -365,8 +366,8 @@ table tr:hover td {
 /* ── Badge ── */
 .badge {
   display: inline-block;
-  padding: 2px 8px;
-  font-size: 11px;
+  padding: 4px 10px;
+  font-size: 12px;
   font-weight: 600;
   border-radius: 20px;
   text-transform: uppercase;
@@ -406,15 +407,15 @@ a:hover {
 /* ── Note cards (dashboard) ── */
 .note-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
 .note-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 18px;
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
@@ -424,23 +425,23 @@ a:hover {
 }
 
 .note-card-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  margin: 0 0 4px;
+  margin: 0 0 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .note-card-meta {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
 .note-card-actions {
   display: flex;
-  gap: 4px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 14px;
 }
 
 /* ── Modal (GTK dialog style) ── */
@@ -458,31 +459,31 @@ a:hover {
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
-  min-width: 360px;
-  max-width: 480px;
+  min-width: 420px;
+  max-width: 560px;
 }
 
 .modal-header {
-  padding: 16px 20px 0;
+  padding: 20px 24px 0;
 }
 
 .modal-title {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
   margin: 0;
 }
 
 .modal-body {
-  padding: 14px 20px;
-  font-size: 13px;
+  padding: 18px 24px;
+  font-size: 15px;
 }
 
 .modal-footer {
-  padding: 12px 20px;
+  padding: 16px 24px;
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 8px;
 }
 
 /* ── Utility ── */
@@ -509,20 +510,20 @@ a:hover {
 
 /* ── Container ── */
 .container {
-  max-width: 960px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 16px;
 }
 
 .container-narrow {
-  max-width: 480px;
+  max-width: 600px;
   margin: 0 auto;
   padding: 0 16px;
 }
 
 /* ── Settings sections ── */
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .settings-section:last-child {
@@ -532,14 +533,14 @@ a:hover {
 /* ── Nav tabs (GTK stack sidebar style) ── */
 .nav-tabs {
   display: flex;
-  gap: 2px;
+  gap: 4px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .nav-tab {
-  padding: 8px 14px;
-  font-size: 13px;
+  padding: 10px 18px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
   border: none;
@@ -565,7 +566,7 @@ a:hover {
 /* ── Inline form row ── */
 .form-row {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: flex-end;
 }
 
@@ -584,9 +585,9 @@ a:hover {
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 4px 6px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 14px;
   transition: all var(--transition);
 }
 
@@ -603,8 +604,8 @@ a:hover {
 }
 
 /* ── Responsive ── */
-@media (max-width: 640px) {
-  .headerbar { flex-wrap: wrap; height: auto; gap: 4px; padding: 8px 12px; position: static; }
+@media (max-width: 768px) {
+  .headerbar { flex-wrap: wrap; height: auto; gap: 6px; padding: 12px 16px; position: static; }
   .headerbar-title, .headerbar-nav:last-child { position: static; }
   .headerbar-nav { flex: 1; justify-content: center; }
   .note-grid { grid-template-columns: 1fr; }

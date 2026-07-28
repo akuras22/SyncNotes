@@ -120,36 +120,9 @@ def authorize_device():
     )
 
 
-@web_bp.route('/settings/tokens', methods=['GET', 'POST'])
-@login_required
-def api_tokens():
-    if request.method == 'POST':
-        name = request.form.get('name', '').strip()
-        if name:
-            token_str = ApiToken.generate_token()
-            token = ApiToken(
-                token=token_str, name=name, user_id=current_user.id
-            )
-            db.session.add(token)
-            db.session.commit()
-            flash(f'Token created: {token_str}', 'success')
-        else:
-            flash('Token name is required', 'error')
-
-    tokens = ApiToken.query.filter_by(user_id=current_user.id).all()
-    return render_template('api_tokens.html', tokens=tokens)
-
-
-@web_bp.route('/settings/tokens/<int:token_id>/revoke', methods=['POST'])
-@login_required
-def revoke_token(token_id):
-    token = ApiToken.query.filter_by(
-        id=token_id, user_id=current_user.id
-    ).first_or_404()
-    db.session.delete(token)
-    db.session.commit()
-    flash('Token revoked', 'success')
-    return redirect(url_for('web.api_tokens'))
+@web_bp.route('/download')
+def download():
+    return render_template('download.html')
 
 
 @web_bp.route('/settings', methods=['GET', 'POST'])

@@ -51,9 +51,12 @@ def create_app():
 
     with app.app_context():
         db.create_all()
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', email='admin@localhost', role='admin')
-            admin.set_password('admin123')
+        if User.query.count() == 0:
+            username = os.environ.get('ADMIN_USERNAME', 'admin')
+            email = os.environ.get('ADMIN_EMAIL', 'admin@localhost')
+            password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+            admin = User(username=username, email=email, role='admin')
+            admin.set_password(password)
             db.session.add(admin)
             db.session.commit()
 

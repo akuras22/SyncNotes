@@ -19,6 +19,8 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    PREFERRED_URL_SCHEME = os.environ.get('PREFERRED_URL_SCHEME', 'http')
+
     UPLOAD_FOLDER = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), 'uploads'
     )

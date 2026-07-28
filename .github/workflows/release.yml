@@ -1,0 +1,49 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            ext: ''
+            asset_name: App-linux-x86_64
+
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            ext: '.exe'
+            asset_name: App-windows-x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.target }}
+        working-directory: App
+
+      - name: Rename binary
+        shell: bash
+        run: |
+          mv App/target/${{ matrix.target }}/release/App${{ matrix.ext }} \
+             App/target/${{ matrix.target }}/release/${{ matrix.asset_name }}${{ matrix.ext }}
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: App/target/${{ matrix.target }}/release/${{ matrix.asset_name }}${{ matrix.ext }}

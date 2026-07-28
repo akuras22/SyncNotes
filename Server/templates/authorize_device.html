@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Authorize Device — SyncNotes{% endblock %}
 {% block content %}
-<div class="panel" style="max-width:520px;">
+<div class="panel">
   <div class="panel-header">Authorize a Device</div>
   <div class="panel-body">
-    <p class="text-muted" style="font-size:13px;margin-top:0;">Enter the code shown on your device to link it to your account.</p>
+    <p class="text-muted" style="margin-top:0;">Enter the code shown on your device to link it to your account.</p>
     <form method="POST">
       <div class="form-row">
         <div class="form-group">
@@ -17,25 +17,25 @@
   </div>
 </div>
 
-<div class="panel" style="max-width:520px;margin-top:16px;">
+<div class="panel" style="margin-top:16px;">
   <div class="panel-header">Pending Requests</div>
   <div class="panel-body">
-    <p style="margin:0;font-size:13px;">{{ pending }} device code{{ '' if pending == 1 else 's' }} waiting for authorization.</p>
+    <p style="margin:0;">{{ pending }} device code{{ '' if pending == 1 else 's' }} waiting for authorization.</p>
   </div>
 </div>
 
-<div class="panel" style="max-width:520px;margin-top:16px;">
+<div class="panel" style="margin-top:16px;">
   <div class="panel-header">Authorized Devices</div>
   <div class="panel-body">
     {% if tokens %}
       {% for token in tokens if token.name.startswith('Device:') %}
-        <div class="flex items-center justify-between" style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">
+        <div class="flex items-center justify-between" style="padding:12px 0;border-bottom:1px solid var(--border);">
           <span>{{ token.name[8:] }}</span>
           <span class="text-muted text-sm">Created {{ token.created_at.strftime('%Y-%m-%d') }}</span>
         </div>
       {% endfor %}
     {% else %}
-      <p class="text-muted" style="margin:0;font-size:13px;">No devices authorized yet.</p>
+      <p class="text-muted" style="margin:0;">No devices authorized yet.</p>
     {% endif %}
   </div>
 </div>

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Settings — SyncNotes{% endblock %}
 {% block content %}
-<div class="panel" style="max-width: 520px;">
+<div class="panel">
   <div class="panel-header">Account Settings</div>
   <div class="panel-body">
     <div class="settings-section">
@@ -52,10 +52,10 @@
     <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;">
 
     <div>
-      <p class="mb-1" style="font-size:13px;"><strong>Username:</strong> {{ current_user.username }}</p>
-      <p class="mb-1" style="font-size:13px;"><strong>Email:</strong> {{ current_user.email }}</p>
-      <p class="mb-1" style="font-size:13px;"><strong>Role:</strong> <span class="badge badge-{{ 'red' if current_user.is_admin() else 'gray' }}">{{ current_user.role }}</span></p>
-      <p class="mb-0" style="font-size:13px;"><strong>Joined:</strong> {{ current_user.created_at.strftime('%Y-%m-%d') }}</p>
+      <p class="mb-2"><strong>Username:</strong> {{ current_user.username }}</p>
+      <p class="mb-2"><strong>Email:</strong> {{ current_user.email }}</p>
+      <p class="mb-2"><strong>Role:</strong> <span class="badge badge-{{ 'red' if current_user.is_admin() else 'gray' }}">{{ current_user.role }}</span></p>
+      <p class="mb-0"><strong>Joined:</strong> {{ current_user.created_at.strftime('%Y-%m-%d') }}</p>
     </div>
   </div>
 </div>

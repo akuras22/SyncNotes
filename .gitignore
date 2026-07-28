@@ -4,3 +4,4 @@ uploads/
 venv/
 __pycache__/
 *.pyc
+App/target/
