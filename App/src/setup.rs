@@ -49,10 +49,11 @@ impl SetupWizard {
 }
 
 impl eframe::App for SetupWizard {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        ctx.set_style(theme::dark_theme());
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let style = theme::dark_theme();
+        ui.ctx().set_style_of(egui::Theme::Dark, style);
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             ui.visuals_mut().window_fill =
                 egui::Color32::from_rgb(0x1e, 0x1e, 0x1e);
 
@@ -103,28 +104,28 @@ impl eframe::App for SetupWizard {
                         ui.label("Enter this code on the authorization page:");
                         ui.add_space(4.0);
 
-                        ui.add(
-                            egui::Frame::none()
-                                .fill(egui::Color32::from_rgb(0x2a, 0x2a, 0x2a))
-                                .rounding(egui::Rounding::same(8.0))
-                                .show(ui, |ui| {
-                                    ui.add_space(12.0);
-                                    ui.horizontal_centered(|ui| {
-                                        ui.add_space(12.0);
-                                        ui.heading(
-                                            egui::RichText::new(&info.user_code)
-                                                .size(28.0)
-                                                .color(egui::Color32::from_rgb(
-                                                    0x35, 0x84, 0xe4,
-                                                ))
-                                                .monospace(),
-                                        );
-                                        ui.add_space(12.0);
-                                    });
-                                    ui.add_space(12.0);
-                                })
-                                .response,
-                        );
+                        let round = egui::CornerRadius::same(8);
+                        let frame = egui::Frame {
+                            fill: egui::Color32::from_rgb(0x2a, 0x2a, 0x2a),
+                            rounding: round,
+                            ..Default::default()
+                        };
+                        frame.show(ui, |ui| {
+                            ui.add_space(12.0);
+                            ui.horizontal_centered(|ui| {
+                                ui.add_space(12.0);
+                                ui.heading(
+                                    egui::RichText::new(&info.user_code)
+                                        .size(28.0)
+                                        .color(egui::Color32::from_rgb(
+                                            0x35, 0x84, 0xe4,
+                                        ))
+                                        .monospace(),
+                                );
+                                ui.add_space(12.0);
+                            });
+                            ui.add_space(12.0);
+                        });
 
                         ui.add_space(12.0);
 
@@ -187,7 +188,7 @@ impl eframe::App for SetupWizard {
                             });
                         }
 
-                        ctx.request_repaint();
+                        ui.ctx().request_repaint();
 
                         let status = self.auth_status.lock().unwrap().clone();
                         if status.is_empty() {
@@ -315,13 +316,13 @@ impl eframe::App for SetupWizard {
                         config.save();
 
                         if self.auto_start {
-                            if let Ok(launcher) = auto_launch::AutoLaunchBuilder::new()
+                            if let Ok(mut launcher) = auto_launch::AutoLaunchBuilder::new()
                                 .set_app_name("SyncNotes")
                                 .set_app_path(
                                     std::env::current_exe()
                                         .unwrap_or_default()
                                         .to_string_lossy()
-                                        .to_string(),
+                                        .as_ref(),
                                 )
                                 .set_args(&["--daemon"])
                                 .build()
@@ -348,7 +349,7 @@ impl eframe::App for SetupWizard {
                         )
                         .clicked()
                     {
-                        _frame.close();
+                        _frame.viewport_mut().close();
                     }
                 }
             }

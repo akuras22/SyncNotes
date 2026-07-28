@@ -1,4 +1,4 @@
-use egui::{Color32, Rounding, Style, Visuals};
+use egui::{Color32, CornerRadius, Rounding, Style, Visuals};
 
 pub fn dark_theme() -> Style {
     Style {
@@ -22,7 +22,7 @@ pub fn dark_theme() -> Style {
                     weak_bg_fill: Color32::from_rgb(0x36, 0x36, 0x36),
                     bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(0x4a, 0x4a, 0x4a)),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(0xe8, 0xe8, 0xe8)),
-                    rounding: Rounding::same(6.0),
+                    corner_radius: CornerRadius::same(6),
                     expansion: 0.0,
                 },
                 inactive: egui::style::WidgetVisuals {
@@ -30,7 +30,7 @@ pub fn dark_theme() -> Style {
                     weak_bg_fill: Color32::from_rgb(0x36, 0x36, 0x36),
                     bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(0x4a, 0x4a, 0x4a)),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(0xe8, 0xe8, 0xe8)),
-                    rounding: Rounding::same(6.0),
+                    corner_radius: CornerRadius::same(6),
                     expansion: 0.0,
                 },
                 hovered: egui::style::WidgetVisuals {
@@ -38,7 +38,7 @@ pub fn dark_theme() -> Style {
                     weak_bg_fill: Color32::from_rgb(0x2a, 0x2a, 0x2a),
                     bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(0x66, 0x66, 0x66)),
                     fg_stroke: egui::Stroke::new(1.5, Color32::from_rgb(0xe8, 0xe8, 0xe8)),
-                    rounding: Rounding::same(6.0),
+                    corner_radius: CornerRadius::same(6),
                     expansion: 0.0,
                 },
                 active: egui::style::WidgetVisuals {
@@ -46,7 +46,7 @@ pub fn dark_theme() -> Style {
                     weak_bg_fill: Color32::from_rgb(0x4a, 0x4a, 0x4a),
                     bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(0x35, 0x84, 0xe4)),
                     fg_stroke: egui::Stroke::new(2.0, Color32::from_rgb(0xe8, 0xe8, 0xe8)),
-                    rounding: Rounding::same(6.0),
+                    corner_radius: CornerRadius::same(6),
                     expansion: 0.0,
                 },
                 open: egui::style::WidgetVisuals {
@@ -54,11 +54,11 @@ pub fn dark_theme() -> Style {
                     weak_bg_fill: Color32::from_rgb(0x36, 0x36, 0x36),
                     bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(0x35, 0x84, 0xe4)),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(0xe8, 0xe8, 0xe8)),
-                    rounding: Rounding::same(6.0),
+                    corner_radius: CornerRadius::same(6),
                     expansion: 0.0,
                 },
             },
-            window_rounding: Rounding::same(8.0),
+            window_corner_radius: CornerRadius::same(8),
             window_shadow: egui::epaint::Shadow {
                 offset: [0, 4].into(),
                 blur: 12,

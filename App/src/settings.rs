@@ -21,10 +21,11 @@ impl SettingsWindow {
 }
 
 impl eframe::App for SettingsWindow {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        ctx.set_style(theme::dark_theme());
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let style = theme::dark_theme();
+        ui.ctx().set_style_of(egui::Theme::Dark, style);
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             ui.visuals_mut().window_fill =
                 egui::Color32::from_rgb(0x1e, 0x1e, 0x1e);
 
@@ -32,83 +33,86 @@ impl eframe::App for SettingsWindow {
             ui.heading("SyncNotes Settings");
             ui.add_space(16.0);
 
-            egui::Frame::none()
-                .fill(egui::Color32::from_rgb(0x2d, 0x2d, 0x2d))
-                .rounding(egui::Rounding::same(8.0))
-                .stroke(egui::Stroke::new(
+            let round = egui::CornerRadius::same(8);
+            let frame = egui::Frame {
+                fill: egui::Color32::from_rgb(0x2d, 0x2d, 0x2d),
+                rounding: round,
+                stroke: egui::Stroke::new(
                     1.0,
                     egui::Color32::from_rgb(0x4a, 0x4a, 0x4a),
-                ))
-                .show(ui, |ui| {
-                    ui.add_space(8.0);
-                    egui::Grid::new("settings")
-                        .striped(false)
-                        .min_col_width(120.0)
-                        .show(ui, |ui| {
-                            ui.label("Server URL:");
+                ),
+                ..Default::default()
+            };
+            frame.show(ui, |ui| {
+                ui.add_space(8.0);
+                egui::Grid::new("settings")
+                    .striped(false)
+                    .min_col_width(120.0)
+                    .show(ui, |ui| {
+                        ui.label("Server URL:");
+                        ui.add(
+                            egui::TextEdit::singleline(&mut self.server_url_edit)
+                                .desired_width(320.0),
+                        );
+                        ui.end_row();
+
+                        ui.label("Rnotes Directory:");
+                        ui.horizontal(|ui| {
                             ui.add(
-                                egui::TextEdit::singleline(&mut self.server_url_edit)
-                                    .desired_width(320.0),
-                            );
-                            ui.end_row();
-
-                            ui.label("Rnotes Directory:");
-                            ui.horizontal(|ui| {
-                                ui.add(
-                                    egui::TextEdit::singleline(
-                                        &mut self.rnotes_dir_edit,
-                                    )
-                                    .desired_width(240.0),
-                                );
-                                if ui.button("Browse").clicked() {
-                                    if let Some(path) =
-                                        rfd::FileDialog::new().pick_folder()
-                                    {
-                                        self.rnotes_dir_edit =
-                                            path.to_string_lossy().to_string();
-                                    }
-                                }
-                            });
-                            ui.end_row();
-
-                            ui.label("Auto-start:");
-                            if ui
-                                .checkbox(
-                                    &mut self.config.autostart,
-                                    "Start on login",
+                                egui::TextEdit::singleline(
+                                    &mut self.rnotes_dir_edit,
                                 )
-                                .changed()
-                            {
-                                let launcher =
-                                    auto_launch::AutoLaunchBuilder::new()
-                                        .set_app_name("SyncNotes")
-                                        .set_app_path(
-                                            std::env::current_exe()
-                                                .unwrap_or_default()
-                                                .to_string_lossy()
-                                                .to_string(),
-                                        )
-                                        .set_args(&["--daemon"])
-                                        .build();
-                                if let Ok(l) = launcher {
-                                    if self.config.autostart {
-                                        l.enable().ok();
-                                    } else {
-                                        l.disable().ok();
-                                    }
+                                .desired_width(240.0),
+                            );
+                            if ui.button("Browse").clicked() {
+                                if let Some(path) =
+                                    rfd::FileDialog::new().pick_folder()
+                                {
+                                    self.rnotes_dir_edit =
+                                        path.to_string_lossy().to_string();
                                 }
                             }
-                            ui.end_row();
-
-                            ui.label("Sync:");
-                            ui.checkbox(
-                                &mut self.config.sync_subdirs,
-                                "Include subdirectories",
-                            );
-                            ui.end_row();
                         });
-                    ui.add_space(8.0);
-                });
+                        ui.end_row();
+
+                        ui.label("Auto-start:");
+                        if ui
+                            .checkbox(
+                                &mut self.config.autostart,
+                                "Start on login",
+                            )
+                            .changed()
+                        {
+                            let launcher =
+                                auto_launch::AutoLaunchBuilder::new()
+                                    .set_app_name("SyncNotes")
+                                    .set_app_path(
+                                        std::env::current_exe()
+                                            .unwrap_or_default()
+                                            .to_string_lossy()
+                                            .as_ref(),
+                                    )
+                                    .set_args(&["--daemon"])
+                                    .build();
+                            if let Ok(mut l) = launcher {
+                                if self.config.autostart {
+                                    l.enable().ok();
+                                } else {
+                                    l.disable().ok();
+                                }
+                            }
+                        }
+                        ui.end_row();
+
+                        ui.label("Sync:");
+                        ui.checkbox(
+                            &mut self.config.sync_subdirs,
+                            "Include subdirectories",
+                        );
+                        ui.end_row();
+                    });
+                ui.add_space(8.0);
+            });
 
             ui.add_space(16.0);
 
