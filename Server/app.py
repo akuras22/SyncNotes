@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import pymysql
 from flask import Flask
 from flask_login import LoginManager
+from sqlalchemy import text
 
 from config import Config
 from models import db, User
@@ -43,18 +44,12 @@ MIGRATIONS = {
 
 
 def run_migrations():
-    db_type = 'mysql' if 'mysql' in Config.SQLALCHEMY_DATABASE_URI else 'sqlite'
     for table, stmts in MIGRATIONS.items():
         for stmt in stmts:
             try:
-                if db_type == 'sqlite':
-                    db.session.execute(
-                        f'ALTER TABLE {table} {stmt}'
-                    )
-                else:
-                    db.session.execute(
-                        f'ALTER TABLE {table} {stmt}'
-                    )
+                db.session.execute(
+                    text(f'ALTER TABLE {table} {stmt}')
+                )
                 db.session.commit()
             except Exception:
                 db.session.rollback()
