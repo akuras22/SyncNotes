@@ -7,7 +7,6 @@ mod tray;
 
 use config::AppConfig;
 use eframe::egui;
-use std::time::Duration;
 
 fn load_icon() -> Option<egui::IconData> {
     let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
@@ -30,15 +29,7 @@ fn main() {
                 && auth::verify_token(&cfg.server_url, &cfg.access_token);
 
             if token_valid {
-                if cfg.show_tray_icon {
-                    tray::start_tray();
-                    run_settings(cfg);
-                    loop {
-                        std::thread::sleep(Duration::from_secs(86400));
-                    }
-                } else {
-                    run_settings(cfg);
-                }
+                run_settings(cfg);
             } else {
                 AppConfig::delete();
                 run_setup();
