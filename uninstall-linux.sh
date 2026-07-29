@@ -11,6 +11,13 @@ header(){ echo -e "\n  ${CYAN}── $* ──${NC}"; }
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+finish() {
+    echo ""
+    echo -e "  ${GREEN}✔${NC} ${BLUE}Done.${NC}"
+    echo -e "  ${YELLOW}Press Enter to close${NC}"
+    read -r
+    echo -ne "\033[?1049l"
+}
 cleanup() { echo -ne "\033[?1049l"; }
 trap cleanup INT TERM EXIT
 echo -ne "\033[?1049h\033[H"
@@ -82,6 +89,7 @@ uninstall_server() {
     [ -d "$ROOT_DIR/Server/instance" ] && rm -rf "$ROOT_DIR/Server/instance" && ok "Database files removed"
 
     ok "Server uninstalled"
+    finish
 }
 
 # ── Uninstall App ──────────────────────────────────────────────────────────
@@ -128,6 +136,7 @@ uninstall_app() {
     fi
 
     ok "Desktop app uninstalled"
+    finish
 }
 
 # ── Main ───────────────────────────────────────────────────────────────────

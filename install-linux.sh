@@ -11,6 +11,13 @@ header(){ echo -e "\n  ${CYAN}── $* ──${NC}"; }
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+finish() {
+    echo ""
+    echo -e "  ${GREEN}✔${NC} ${BLUE}Done.${NC}"
+    echo -e "  ${YELLOW}Press Enter to close${NC}"
+    read -r
+    echo -ne "\033[?1049l"
+}
 cleanup() { echo -ne "\033[?1049l"; }
 trap cleanup INT TERM EXIT
 echo -ne "\033[?1049h\033[H"
@@ -191,6 +198,7 @@ install_server() {
     echo -e "    ${YELLOW}stop:${NC}    cd Server && docker compose down"
     echo -e "    ${YELLOW}logs:${NC}    cd Server && docker compose logs -f"
     echo ""
+    finish
 }
 
 # ── App Installation ───────────────────────────────────────────────────────
@@ -303,6 +311,7 @@ EOF
     echo "    First run will guide you through setup."
     echo "    Default server: https://notes.huebler.tech"
     echo ""
+    finish
 }
 
 # ── Welcome ────────────────────────────────────────────────────────────────
