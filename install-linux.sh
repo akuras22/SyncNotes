@@ -222,26 +222,29 @@ install_app() {
             fi
         done
 
-        if ! pkg-config --exists appindicator3 2>/dev/null && ! pkg-config --exists ayatana-appindicator3 2>/dev/null; then
+        if ! pkg-config --exists appindicator3 2>/dev/null && ! pkg-config --exists appindicator3-0.1 2>/dev/null && ! pkg-config --exists ayatana-appindicator3 2>/dev/null; then
             MISSING_PKGS+=("appindicator3")
         fi
 
         if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
-            warn "Missing packages (${MISSING_PKGS[*]})"
+            warn "Missing (${MISSING_PKGS[*]})"
             if confirm "Install missing packages?"; then
                 $PKG_UPDATE
                 install_packages "${PKGS_APP[@]}"
-                case "$PKG_MANAGER" in
-                    apt) $PKG_INSTALL libappindicator3-dev 2>/dev/null || $PKG_INSTALL libayatana-appindicator3-dev 2>/dev/null || true ;;
-                    pacman) $PKG_INSTALL libappindicator-gtk3 2>/dev/null || true ;;
-                    dnf) $PKG_INSTALL libappindicator-gtk3-devel 2>/dev/null || true ;;
-                    zypper) $PKG_INSTALL libappindicator3-devel 2>/dev/null || true ;;
-                    *) true ;;
-                esac
                 ok "Dependencies installed"
             fi
         else
             ok "All dependencies present"
+        fi
+
+        # Tray icon library
+        if ! pkg-config --exists appindicator3 2>/dev/null && ! pkg-config --exists appindicator3-0.1 2>/dev/null && ! pkg-config --exists ayatana-appindicator3 2>/dev/null; then
+            case "$PKG_MANAGER" in
+                apt) pkg="libappindicator3-dev"; dpkg -s "$pkg" &>/dev/null || $PKG_INSTALL "$pkg" 2>/dev/null || { pkg="libayatana-appindicator3-dev"; dpkg -s "$pkg" &>/dev/null || $PKG_INSTALL "$pkg" 2>/dev/null; } || true ;;
+                pacman) pkg="libappindicator-gtk3"; pacman -Qi "$pkg" &>/dev/null || $PKG_INSTALL "$pkg" || true ;;
+                dnf) pkg="libappindicator-gtk3-devel"; rpm -q "$pkg" &>/dev/null || $PKG_INSTALL "$pkg" 2>/dev/null || true ;;
+                zypper) pkg="libappindicator3-devel"; rpm -q "$pkg" &>/dev/null || $PKG_INSTALL "$pkg" 2>/dev/null || true ;;
+            esac
         fi
     fi
 
