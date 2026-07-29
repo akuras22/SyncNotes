@@ -7,6 +7,10 @@ pub fn start_tray() {
         return;
     }
 
+    if gtk::init().is_err() {
+        return;
+    }
+
     let img_bytes = include_bytes!("../../logo.png");
     let img = match image::load_from_memory(img_bytes) {
         Ok(i) => i.resize_exact(32, 32, image::imageops::FilterType::Lanczos3),
