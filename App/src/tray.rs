@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self, JoinHandle};
 use tray_icon::menu::{Menu, MenuEvent, MenuItem};
-use tray_icon::{Icon, TrayIconBuilder, TrayIconEvent};
+use tray_icon::{Icon, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use image::GenericImageView;
 
 pub static SHOULD_QUIT: AtomicBool = AtomicBool::new(false);
@@ -11,6 +11,8 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
     let handle = thread::Builder::new()
         .name("tray".into())
         .spawn(move || {
+            gtk::glib::set_application_name("SyncNotes");
+
             if gtk::init().is_err() {
                 return;
             }
@@ -44,15 +46,17 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
                 }
             }));
 
-            if TrayIconBuilder::new()
+            let tray_icon = match TrayIconBuilder::new()
                 .with_icon(icon.unwrap())
                 .with_menu(Box::new(menu))
                 .with_tooltip("SyncNotes")
                 .build()
-                .is_err()
             {
-                return;
-            }
+                Ok(tray_icon) => tray_icon,
+                Err(_) => return,
+            };
+
+            let _tray_icon: TrayIcon = tray_icon;
 
             gtk::glib::timeout_add_local(std::time::Duration::from_millis(200), move || {
                 if SHOULD_QUIT.load(Ordering::Relaxed) {
