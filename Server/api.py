@@ -571,12 +571,14 @@ def view_pdf(note_id):
     )
 
 
-@api_bp.route('/notes/<int:note_id>', methods=['DELETE'])
+@api_bp.route('/notes/<int:note_id>', methods=['DELETE', 'POST'])
 @require_auth
 def delete_note(note_id):
-    """Used by the website's Delete button. Soft-deletes so the removal
-    also propagates to any device that has this note synced, same as a
-    delete initiated from the sync client."""
+    """Used by the website's Delete button (a plain HTML <form> can only
+    submit GET/POST, so POST is accepted here too) as well as any client
+    that sends a real DELETE. Soft-deletes so the removal also propagates
+    to any device that has this note synced, same as a delete initiated
+    from the sync client."""
     note = NoteFile.query.filter_by(
         id=note_id, user_id=current_user.id
     ).first_or_404()

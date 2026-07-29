@@ -13,7 +13,72 @@
   </div>
 </div>
 
-<div class="panel pdf-viewer">
-  <iframe src="{{ url_for('api.download_pdf', relpath=note.relpath, version=version.version_number) }}" title="{{ note.name }}"></iframe>
+<div class="pdf-toolbar panel">
+  <button class="btn btn-sm btn-default" id="pdf-zoom-out" type="button" aria-label="Zoom out">&minus;</button>
+  <span class="text-sm text-muted" id="pdf-zoom-label">100%</span>
+  <button class="btn btn-sm btn-default" id="pdf-zoom-in" type="button" aria-label="Zoom in">+</button>
+  <span class="text-sm text-muted" id="pdf-page-label" style="margin-left:auto;"></span>
 </div>
+
+<div id="pdf-pages" class="pdf-pages">
+  <p class="text-muted text-sm" style="text-align:center;padding:60px 0;">Loading&hellip;</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(() => {
+  const pdfUrl = {{ url_for('api.download_pdf', relpath=note.relpath, version=version.version_number)|tojson }};
+  const container = document.getElementById('pdf-pages');
+  const pageLabel = document.getElementById('pdf-page-label');
+  const zoomLabel = document.getElementById('pdf-zoom-label');
+  const BASE_SCALE = 1.2;
+  let scale = BASE_SCALE;
+  let pdfDoc = null;
+  let rendering = false;
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  async function renderAll() {
+    if (!pdfDoc || rendering) return;
+    rendering = true;
+    container.innerHTML = '';
+    for (let num = 1; num <= pdfDoc.numPages; num++) {
+      const page = await pdfDoc.getPage(num);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.className = 'pdf-page';
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      container.appendChild(canvas);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    }
+    rendering = false;
+  }
+
+  function setZoom(next) {
+    scale = Math.min(Math.max(next, 0.5), 3);
+    zoomLabel.textContent = Math.round((scale / BASE_SCALE) * 100) + '%';
+    renderAll();
+  }
+
+  fetch(pdfUrl, { credentials: 'same-origin' })
+    .then((r) => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.arrayBuffer();
+    })
+    .then((data) => pdfjsLib.getDocument({ data }).promise)
+    .then((doc) => {
+      pdfDoc = doc;
+      pageLabel.textContent = doc.numPages + (doc.numPages === 1 ? ' page' : ' pages');
+      return renderAll();
+    })
+    .catch((err) => {
+      container.innerHTML = '<p class="text-muted text-sm" style="text-align:center;padding:60px 0;">Could not load the PDF.</p>';
+      console.error(err);
+    });
+
+  document.getElementById('pdf-zoom-in').addEventListener('click', () => setZoom(scale + 0.2));
+  document.getElementById('pdf-zoom-out').addEventListener('click', () => setZoom(scale - 0.2));
+})();
+</script>
 {% endblock %}
