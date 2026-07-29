@@ -9,6 +9,7 @@ pub struct AppConfig {
     pub rnotes_dir: String,
     pub autostart: bool,
     pub sync_subdirs: bool,
+    pub show_tray_icon: bool,
 }
 
 impl Default for AppConfig {
@@ -23,6 +24,7 @@ impl Default for AppConfig {
                 .to_string(),
             autostart: true,
             sync_subdirs: true,
+            show_tray_icon: true,
         }
     }
 }

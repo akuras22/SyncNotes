@@ -77,6 +77,10 @@ impl eframe::App for SettingsWindow {
                             ui.label("Sync:");
                             ui.checkbox(&mut self.config.sync_subdirs, "Include subdirectories");
                             ui.end_row();
+
+                            ui.label("Tray Icon:");
+                            ui.checkbox(&mut self.config.show_tray_icon, "Show in system tray");
+                            ui.end_row();
                         });
                 });
 

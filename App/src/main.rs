@@ -3,22 +3,28 @@ mod config;
 mod settings;
 mod setup;
 mod theme;
+mod tray;
 
 use config::AppConfig;
 use eframe::egui;
 use std::time::Duration;
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let is_settings = args.iter().any(|a| a == "--settings");
     let config = AppConfig::load();
 
-    if config.is_none() {
-        run_setup();
-    } else if is_settings {
-        run_settings(config.unwrap());
-    } else {
-        run_daemon();
+    match config {
+        None => run_setup(),
+        Some(cfg) => {
+            if cfg.show_tray_icon {
+                tray::start_tray();
+                run_settings(cfg);
+                loop {
+                    std::thread::sleep(Duration::from_secs(86400));
+                }
+            } else {
+                run_settings(cfg);
+            }
+        }
     }
 }
 
@@ -54,10 +60,4 @@ fn run_settings(config: AppConfig) {
         Box::new(|_cc| Ok(Box::new(settings::SettingsWindow::new(config)))),
     )
     .ok();
-}
-
-fn run_daemon() {
-    loop {
-        std::thread::sleep(Duration::from_secs(60));
-    }
 }
