@@ -50,14 +50,15 @@ impl eframe::App for SettingsWindow {
             ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(false));
         }
 
-        if ctx.has_requested_close() {
+        let close_requested = ctx.input(|i| i.viewport().close_requested());
+        if close_requested {
             if self.config.show_tray_icon {
                 ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
                 ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(true));
             }
         }
 
-        if !ctx.has_requested_close() {
+        if !close_requested {
             ctx.request_repaint_after(Duration::from_millis(200));
         }
 
