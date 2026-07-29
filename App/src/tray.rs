@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self, JoinHandle};
 use tray_icon::menu::{Menu, MenuEvent, MenuItem};
-use tray_icon::{Button, Icon, TrayIconBuilder, TrayIconEvent};
+use tray_icon::{Icon, TrayIconBuilder};
 use image::GenericImageView;
 
 pub static SHOULD_QUIT: AtomicBool = AtomicBool::new(false);
@@ -29,12 +29,6 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
             if menu.append_items(&[&show, &quit]).is_err() {
                 return;
             }
-
-            TrayIconEvent::set_event_handler(Some(move |event: TrayIconEvent| {
-                if let TrayIconEvent::Click { button: Button::Left, .. } = event {
-                    SHOULD_SHOW.store(true, Ordering::Relaxed);
-                }
-            }));
 
             MenuEvent::set_event_handler(Some(move |event: tray_icon::menu::MenuEvent| {
                 if event.id == quit_id {
