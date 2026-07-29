@@ -263,6 +263,7 @@ install_app() {
     echo ""
     info "Building SyncNotes app (this may take a few minutes)..."
     cd "$ROOT_DIR/App"
+    cargo clean --quiet 2>/dev/null
     cargo build --release
 
     BINARY="$ROOT_DIR/App/target/release/syncnotes-app"
