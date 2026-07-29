@@ -37,7 +37,7 @@ impl eframe::App for SettingsWindow {
                     fill: egui::Color32::from_rgb(0x2d, 0x2d, 0x2d),
                     corner_radius: egui::CornerRadius::same(8),
                     stroke: egui::Stroke::new(1.0, egui::Color32::from_rgb(0x4a, 0x4a, 0x4a)),
-                    margin: egui::Margin::symmetric(16.0, 16.0),
+                    inner_margin: egui::Margin::symmetric(16, 16),
                     ..Default::default()
                 };
 

@@ -178,7 +178,7 @@ impl eframe::App for SetupWizard {
                             egui::Frame {
                                 fill: egui::Color32::from_rgb(0x2a, 0x2a, 0x2a),
                                 corner_radius: egui::CornerRadius::same(8),
-                                margin: egui::Margin::symmetric(24.0, 24.0),
+                                inner_margin: egui::Margin::symmetric(24, 24),
                                 ..Default::default()
                             }.show(ui, |ui| {
                                     ui.heading(egui::RichText::new(&info.user_code)
