@@ -23,6 +23,7 @@ pub struct SetupWizard {
     poll_started: bool,
     rnotes_dir_edit: String,
     auto_start: bool,
+    tray_enabled: bool,
     sync_subdirs: bool,
     logo: Option<egui::TextureHandle>,
 }
@@ -45,6 +46,7 @@ impl SetupWizard {
             poll_started: false,
             rnotes_dir_edit: default_dir,
             auto_start: true,
+            tray_enabled: true,
             sync_subdirs: true,
             logo: None,
         }
@@ -264,6 +266,8 @@ impl eframe::App for SetupWizard {
                         
                         ui.checkbox(&mut self.auto_start, "Start automatically on login");
                         ui.add_space(8.0);
+                        ui.checkbox(&mut self.tray_enabled, "Show tray icon");
+                        ui.add_space(8.0);
                         ui.checkbox(&mut self.sync_subdirs, "Sync subdirectories");
                         
                         ui.add_space(48.0);
@@ -271,6 +275,7 @@ impl eframe::App for SetupWizard {
                             let mut config = AppConfig::load().unwrap_or_default();
                             config.rnotes_dir = self.rnotes_dir_edit.trim().to_string();
                             config.autostart = self.auto_start;
+                            config.show_tray_icon = self.tray_enabled;
                             config.sync_subdirs = self.sync_subdirs;
                             config.save();
 
@@ -292,9 +297,8 @@ impl eframe::App for SetupWizard {
                         ui.add_space(24.0);
                         ui.label("SyncNotes is running in the background and will keep your files in sync.");
                         ui.add_space(48.0);
-                        if ui.add(egui::Button::new("Close").min_size(egui::vec2(160.0, 40.0))).clicked() {
-                            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
+                        ui.add(egui::Button::new("Open Settings").min_size(egui::vec2(160.0, 40.0)));
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                 }
                 

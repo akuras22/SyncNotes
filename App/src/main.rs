@@ -21,15 +21,7 @@ fn main() {
     match config {
         None => run_setup(),
         Some(cfg) => {
-            let token_valid = !cfg.access_token.is_empty()
-                && auth::verify_token(&cfg.server_url, &cfg.access_token);
-
-            if token_valid {
-                run_settings(cfg);
-            } else {
-                AppConfig::delete();
-                run_setup();
-            }
+            run_settings(cfg);
         }
     }
 }
