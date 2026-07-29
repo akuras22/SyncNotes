@@ -5,6 +5,7 @@ use tray_icon::menu::{Menu, MenuEvent, MenuItem};
 use tray_icon::{Icon, TrayIconBuilder};
 
 pub static SHOULD_QUIT: AtomicBool = AtomicBool::new(false);
+pub static SHOULD_SHOW: AtomicBool = AtomicBool::new(false);
 
 pub fn create_tray() {
     let icon = match load_tray_icon() {
@@ -19,11 +20,12 @@ pub fn create_tray() {
                 return;
             }
 
+            let show = MenuItem::new("Show Settings", true, None);
+            let show_id = show.id().clone();
             let quit = MenuItem::new("Quit", true, None);
             let quit_id = quit.id().clone();
 
             let menu = Menu::new();
-            let show = MenuItem::new("Show Settings", true, None);
             if menu.append_items(&[&show, &quit]).is_err() {
                 return;
             }
@@ -31,6 +33,8 @@ pub fn create_tray() {
             MenuEvent::set_event_handler(Some(move |event: tray_icon::menu::MenuEvent| {
                 if event.id == quit_id {
                     SHOULD_QUIT.store(true, Ordering::Relaxed);
+                } else if event.id == show_id {
+                    SHOULD_SHOW.store(true, Ordering::Relaxed);
                 }
             }));
 
