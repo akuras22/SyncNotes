@@ -60,6 +60,7 @@ impl eframe::App for SettingsWindow {
                 };
 
                 frame.show(ui, |ui| {
+                    ui.vertical_centered(|ui| {
                     egui::Grid::new("settings_grid")
                         .spacing([12.0, 16.0])
                         .min_col_width(120.0)
@@ -96,6 +97,7 @@ impl eframe::App for SettingsWindow {
                             ui.checkbox(&mut self.config.sync_subdirs, "Include subdirectories");
                             ui.end_row();
                         });
+                    });
                 });
 
                 ui.add_space(24.0);

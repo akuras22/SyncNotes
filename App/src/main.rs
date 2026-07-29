@@ -10,7 +10,8 @@ use eframe::egui;
 
 fn load_icon() -> Option<egui::IconData> {
     let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
-    let rgba = img.to_rgba8();
+    let small = img.resize_exact(64, 64, image::imageops::FilterType::Lanczos3);
+    let rgba = small.to_rgba8();
     let (w, h) = rgba.dimensions();
     Some(egui::IconData {
         rgba: rgba.as_raw().clone(),
