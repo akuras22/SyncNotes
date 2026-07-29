@@ -17,7 +17,7 @@ pub fn create_tray() -> Option<TrayIcon> {
     let menu = Menu::new();
     menu.append_items(&[&show, &quit]).ok()?;
 
-    MenuEvent::set_event_handler(Some(move |event| {
+    MenuEvent::set_event_handler(Some(move |event: tray_icon::menu::MenuEvent| {
         if event.id == quit_id {
             SHOULD_QUIT.store(true, Ordering::Relaxed);
         }
