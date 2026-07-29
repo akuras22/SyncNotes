@@ -3,17 +3,18 @@ use std::thread::{self, JoinHandle};
 use tray_icon::menu::{Menu, MenuEvent, MenuItem};
 use tray_icon::{Icon, TrayIconBuilder};
 
-use crate::icon::load_logo_rgba;
-
 pub static SHOULD_QUIT: AtomicBool = AtomicBool::new(false);
 
 pub fn create_tray() -> Option<JoinHandle<()>> {
-    let icon = make_tray_icon()?;
-
     let handle = thread::Builder::new()
         .name("tray".into())
         .spawn(move || {
             if gtk::init().is_err() {
+                return;
+            }
+
+            let icon = load_icon();
+            if icon.is_none() {
                 return;
             }
 
@@ -33,7 +34,7 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
             }));
 
             if TrayIconBuilder::new()
-                .with_icon(icon)
+                .with_icon(icon.unwrap())
                 .with_menu(Box::new(menu))
                 .with_tooltip("SyncNotes")
                 .build()
@@ -57,7 +58,14 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
     Some(handle)
 }
 
-fn make_tray_icon() -> Option<Icon> {
-    let (rgba, w, h) = load_logo_rgba(128)?;
-    Icon::from_rgba(rgba, w, h).ok()
+fn load_icon() -> Option<Icon> {
+    let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
+    let rgba = img.to_rgba8();
+    let (w, h) = rgba.dimensions();
+    let dim = w.min(h);
+    let x = (w - dim) / 2;
+    let y = (h - dim) / 2;
+    let cropped = rgba.view(x, y, dim, dim).to_image();
+    let resized = image::imageops::resize(&cropped, 64, 64, image::imageops::FilterType::Lanczos3);
+    Icon::from_rgba(resized.into_raw(), 64, 64).ok()
 }
