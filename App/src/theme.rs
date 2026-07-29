@@ -4,7 +4,6 @@ pub const BLUE: Color32 = Color32::from_rgb(0x35, 0x84, 0xe4);
 pub const BLUE_LIGHT: Color32 = Color32::from_rgb(0x6a, 0xa8, 0xef);
 pub const BLUE_HOVER: Color32 = Color32::from_rgb(0x47, 0x91, 0xe6);
 pub const BLUE_ACTIVE: Color32 = Color32::from_rgb(0x2f, 0x74, 0xc9);
-pub const VIOLET: Color32 = Color32::from_rgb(0x8b, 0x6e, 0xf2);
 pub const SUCCESS: Color32 = Color32::from_rgb(0x2e, 0xc2, 0x7e);
 pub const DESTRUCTIVE: Color32 = Color32::from_rgb(0xf0, 0x47, 0x5a);
 pub const TEXT: Color32 = Color32::from_rgb(0xf2, 0xf2, 0xf5);

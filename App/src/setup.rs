@@ -136,7 +136,7 @@ impl eframe::App for SetupWizard {
                     SetupStep::Welcome => {
                         ui.heading(egui::RichText::new("Welcome to SyncNotes").size(32.0).strong());
                         ui.add_space(12.0);
-                        ui.label("Sync your Rnote files to your private server.");
+                        ui.colored_label(theme::TEXT_SECONDARY, "Sync your Rnote files to your private server.");
                         ui.add_space(32.0);
 
                         ui.label("Server URL:");
@@ -169,7 +169,7 @@ impl eframe::App for SetupWizard {
                     SetupStep::LoginPoll => {
                         ui.heading("Authorizing...");
                         ui.add_space(16.0);
-                        ui.label("Please complete the authorization in your browser.");
+                        ui.colored_label(theme::TEXT_SECONDARY, "Please complete the authorization in your browser.");
                         ui.add_space(24.0);
                         ui.add(egui::ProgressBar::new(0.5).animate(true).desired_width(240.0));
                         ui.add_space(24.0);
@@ -212,7 +212,7 @@ impl eframe::App for SetupWizard {
                         }
 
                         if let Some(ref info) = self.code_info {
-                            ui.label("Enter this code on the authorization page:");
+                            ui.colored_label(theme::TEXT_SECONDARY, "Enter this code on the authorization page:");
                             ui.add_space(16.0);
 
                             egui::Frame {
@@ -256,7 +256,7 @@ impl eframe::App for SetupWizard {
                     SetupStep::Directory => {
                         ui.heading("Notes Directory");
                         ui.add_space(16.0);
-                        ui.label("Select the folder containing your .rnote files:");
+                        ui.colored_label(theme::TEXT_SECONDARY, "Select the folder containing your .rnote files:");
                         ui.add_space(16.0);
 
                         ui.horizontal(|ui| {
@@ -315,7 +315,7 @@ impl eframe::App for SetupWizard {
                             egui::RichText::new("✓ Setup Complete").size(28.0).strong(),
                         );
                         ui.add_space(24.0);
-                        ui.label("SyncNotes will keep your files in sync.");
+                        ui.colored_label(theme::TEXT_SECONDARY, "SyncNotes will keep your files in sync.");
                         ui.add_space(48.0);
                         if theme::primary_button(ui, "Continue", egui::vec2(200.0, 48.0)).clicked() {
                             SETUP_COMPLETE.store(true, Ordering::Relaxed);

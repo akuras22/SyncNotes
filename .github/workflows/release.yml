@@ -46,7 +46,15 @@ jobs:
         run: cargo build --release
         working-directory: App
 
+      - name: Rename binary for release asset
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp "App/target/release/syncnotes-app${{ matrix.ext }}" "dist/${{ matrix.asset_name }}${{ matrix.ext }}"
+
       - name: Upload binary
         uses: softprops/action-gh-release@v2
         with:
-          files: App/target/release/syncnotes-app${{ matrix.ext }}
+          name: SyncNotes ${{ github.ref_name }}
+          generate_release_notes: true
+          files: dist/${{ matrix.asset_name }}${{ matrix.ext }}
