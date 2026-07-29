@@ -256,6 +256,17 @@ install_dir_for_binary() {
 
 write_desktop_entry() {
     local install_dir="$1"
+
+    # Install the icon into the hicolor theme (not just as a loose file next
+    # to the binary) and reference it by name. Wayland compositors resolve a
+    # window's titlebar/taskbar icon by matching its app_id against an
+    # installed .desktop file's StartupWMClass, then looking up that entry's
+    # Icon= - theme-name lookups are honored far more reliably across
+    # desktops than an arbitrary absolute path.
+    local icon_dir="$HOME/.local/share/icons/hicolor/256x256/apps"
+    mkdir -p "$icon_dir"
+    cp "$ROOT_DIR/syncnotes-icon.png" "$icon_dir/syncnotes.png" 2>/dev/null || true
+
     local desktop_dir="$HOME/.local/share/applications"
     mkdir -p "$desktop_dir"
     cat > "$desktop_dir/syncnotes.desktop" <<EOF
@@ -266,9 +277,14 @@ Exec=$install_dir/syncnotes
 Terminal=false
 Type=Application
 Categories=Utility;
-Icon=$install_dir/syncnotes-icon.png
+Icon=syncnotes
 StartupWMClass=com.syncnotes.desktop
 EOF
+
+    # Best-effort cache refresh so the icon/desktop entry show up without
+    # needing to log out and back in.
+    gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+    update-desktop-database "$desktop_dir" >/dev/null 2>&1 || true
 }
 
 add_to_path() {

@@ -148,9 +148,11 @@ uninstall_app() {
         skip "No installed binary found"
     fi
 
-    for path in "/usr/local/bin/syncnotes-icon.png" "$HOME/.local/bin/syncnotes-icon.png"; do
+    for path in "/usr/local/bin/syncnotes-icon.png" "$HOME/.local/bin/syncnotes-icon.png" \
+                "$HOME/.local/share/icons/hicolor/256x256/apps/syncnotes.png"; do
         [ -f "$path" ] && rm -f "$path"
     done
+    gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
 
     CONFIG_DIR="$HOME/.config/syncnotes"
     if [ -d "$CONFIG_DIR" ]; then
@@ -169,6 +171,7 @@ uninstall_app() {
     DESKTOP_FILE="$HOME/.local/share/applications/syncnotes.desktop"
     if [ -f "$DESKTOP_FILE" ]; then
         rm -f "$DESKTOP_FILE"
+        update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
         ok "Removed desktop menu entry"
         REMOVED+=("desktop menu entry")
     fi
