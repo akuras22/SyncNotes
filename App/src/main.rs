@@ -9,6 +9,17 @@ use config::AppConfig;
 use eframe::egui;
 use std::time::Duration;
 
+fn load_icon() -> Option<egui::IconData> {
+    let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
+    let rgba = img.to_rgba8();
+    let (w, h) = rgba.dimensions();
+    Some(egui::IconData {
+        rgba: rgba.as_raw().clone(),
+        width: w,
+        height: h,
+    })
+}
+
 fn main() {
     let config = AppConfig::load();
 
@@ -37,11 +48,17 @@ fn main() {
 }
 
 fn run_setup() {
+    let icon = load_icon();
+    let mut vp = egui::ViewportBuilder::default()
+        .with_inner_size([480.0, 560.0])
+        .with_resizable(false)
+        .with_title("SyncNotes Setup");
+    if let Some(icon) = icon {
+        vp = vp.with_icon(icon);
+    }
+
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([480.0, 560.0])
-            .with_resizable(false)
-            .with_title("SyncNotes Setup"),
+        viewport: vp,
         ..Default::default()
     };
 
@@ -54,11 +71,17 @@ fn run_setup() {
 }
 
 fn run_settings(config: AppConfig) {
+    let icon = load_icon();
+    let mut vp = egui::ViewportBuilder::default()
+        .with_inner_size([540.0, 400.0])
+        .with_resizable(false)
+        .with_title("SyncNotes Settings");
+    if let Some(icon) = icon {
+        vp = vp.with_icon(icon);
+    }
+
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([540.0, 400.0])
-            .with_resizable(false)
-            .with_title("SyncNotes Settings"),
+        viewport: vp,
         ..Default::default()
     };
 
