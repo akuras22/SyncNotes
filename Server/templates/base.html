@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}SyncNotes{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='syncnotes-icon.png') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=10">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=11">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
   function swalConfirm(msg, form) {
@@ -14,12 +17,12 @@
       text: msg,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#e33f3f',
-      cancelButtonColor: '#6c757d',
+      confirmButtonColor: '#f0475a',
+      cancelButtonColor: '#3a3a42',
       confirmButtonText: 'Yes',
       cancelButtonText: 'Cancel',
-      background: '#2d2d2d',
-      color: '#e8e8e8'
+      background: '#1a1a20',
+      color: '#f2f2f5'
     }).then((result) => {
       if (result.isConfirmed) form.submit();
     });
@@ -43,7 +46,10 @@
       {% endif %}
     </nav>
     <div class="headerbar-nav">
-      <span class="headerbar-user">{{ current_user.username }}</span>
+      <span class="headerbar-user">
+        <span class="user-avatar">{{ current_user.username[0]|upper }}</span>
+        {{ current_user.username }}
+      </span>
       <a class="headerbar-btn" href="{{ url_for('web.logout') }}">Logout</a>
     </div>
     {% endif %}

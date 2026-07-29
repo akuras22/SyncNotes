@@ -1,34 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Register — SyncNotes{% endblock %}
 {% block content %}
-<div class="window">
-  <div class="window-header">
-    <h1 class="window-title">Create account</h1>
-    <p class="window-subtitle">Get started with SyncNotes</p>
+<div class="auth-split">
+  <div class="auth-split-panel">
+    <img class="auth-split-logo" src="{{ url_for('static', filename='syncnotes-icon.png') }}" alt="">
+    <h2>Create your SyncNotes account.</h2>
+    <p>Set up your account in seconds and connect the desktop app right after.</p>
+    <ul class="auth-split-list">
+      <li>Free, self-hosted, private</li>
+      <li>Works with the SyncNotes desktop app</li>
+      <li>Your files never leave your server</li>
+    </ul>
   </div>
-  <form method="POST">
-    <div class="window-body">
-      <div class="form-group">
-        <label class="form-label" for="username">Username</label>
-        <input class="form-input" id="username" type="text" name="username" placeholder="Username" required autofocus>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="email">Email</label>
-        <input class="form-input" id="email" type="email" name="email" placeholder="Email" required>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="password">Password</label>
-        <input class="form-input" id="password" type="password" name="password" placeholder="Password" required>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="confirm">Confirm Password</label>
-        <input class="form-input" id="confirm" type="password" name="confirm" placeholder="Confirm password" required>
-      </div>
+  <div class="auth-split-form">
+    <div class="window-header">
+      <h1 class="window-title">Create account</h1>
+      <p class="window-subtitle">Get started with SyncNotes</p>
     </div>
-    <div class="window-footer">
-      <a class="btn btn-flat" href="{{ url_for('web.login') }}">Already have an account?</a>
-      <button class="btn btn-primary" type="submit">Register</button>
-    </div>
-  </form>
+    <form method="POST">
+      <div class="window-body">
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input class="form-input" id="username" type="text" name="username" placeholder="Username" required autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input class="form-input" id="email" type="email" name="email" placeholder="Email" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input class="form-input" id="password" type="password" name="password" placeholder="Password" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="confirm">Confirm Password</label>
+          <input class="form-input" id="confirm" type="password" name="confirm" placeholder="Confirm password" required>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" style="padding:12px;">Register</button>
+      </div>
+      <div class="window-footer" style="justify-content:center;">
+        <span class="text-muted text-sm">Already have an account? <a href="{{ url_for('web.login') }}">Sign in</a></span>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

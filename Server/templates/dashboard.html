@@ -1,22 +1,34 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — SyncNotes{% endblock %}
 {% block content %}
-<div class="panel" style="margin-bottom: 20px;">
-  <div class="panel-body" style="text-align: center;">
-    <p style="margin: 0 0 12px; font-size: 15px;">
-      Upload .rnote files using the SyncNotes desktop app.
-    </p>
+<div class="panel mb-4">
+  <div class="panel-body flex items-center justify-between" style="gap:20px;flex-wrap:wrap;">
+    <div class="flex items-center" style="gap:16px;">
+      <div class="note-card-icon" style="width:44px;height:44px;font-size:19px;">📤</div>
+      <div>
+        <p style="margin:0;font-size:15px;font-weight:600;">Upload notes from the desktop app</p>
+        <p class="text-muted text-sm" style="margin:2px 0 0;">Your .rnote files sync automatically once the app is connected.</p>
+      </div>
+    </div>
     <a class="btn btn-primary" href="{{ url_for('web.download') }}">Download the App</a>
   </div>
 </div>
 
-<h3 style="font-size:18px;font-weight:700;margin:0 0 16px;">My Notes</h3>
+<div class="flex items-center justify-between mb-4">
+  <h3 style="font-size:19px;font-weight:800;margin:0;letter-spacing:-0.02em;">My Notes</h3>
+  {% if notes %}
+  <span class="text-muted text-sm">{{ notes|length }} note{{ '' if notes|length == 1 else 's' }}</span>
+  {% endif %}
+</div>
 
 {% if notes %}
   <div class="note-grid">
     {% for note in notes %}
-      <div class="note-card">
-        <h4 class="note-card-title">{{ note.name }}</h4>
+      <div class="note-card" style="animation-delay: {{ loop.index0 * 40 }}ms;">
+        <div class="note-card-head">
+          <div class="note-card-icon">📝</div>
+          <h4 class="note-card-title" title="{{ note.name }}">{{ note.name }}</h4>
+        </div>
         <p class="note-card-meta">
           {{ note.updated_at.strftime('%Y-%m-%d %H:%M') }}
           {% if note.file_size %} &middot; {{ (note.file_size / 1024)|round(1) }} KB{% endif %}
@@ -37,8 +49,9 @@
     {% endfor %}
   </div>
 {% else %}
-  <div class="text-center" style="padding:60px 0;color:var(--text-secondary);">
-    <p style="font-size:16px;">No notes yet. Use the desktop app to upload your first one!</p>
+  <div class="empty-state panel">
+    <div class="empty-state-icon">📓</div>
+    <p>No notes yet. Use the desktop app to upload your first one!</p>
   </div>
 {% endif %}
 {% endblock %}

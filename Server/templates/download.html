@@ -1,95 +1,80 @@
 {% extends "base.html" %}
 {% block title %}Download — SyncNotes{% endblock %}
 {% block content %}
-<div class="panel mb-4">
-  <div class="panel-header">Download SyncNotes Desktop App</div>
+<div class="hero-panel mb-4">
+  <img class="hero-icon" src="{{ url_for('static', filename='syncnotes-icon.png') }}" alt="">
+  <h1>SyncNotes Desktop</h1>
+  <p>Sync your Rnote files to your own server with a lightweight, native desktop app. Pick your platform below to get started.</p>
+</div>
+
+<div class="panel">
+  <div class="panel-header">Releases</div>
   <div class="panel-body">
-    <p class="text-muted" style="margin-top: 0;">
-      Sync your Rnote files to your server with the lightweight desktop app.
-      Choose your platform below.
-    </p>
     <div id="releases-container">
-      <p class="text-muted" id="loading-text">Loading releases...</p>
+      <div class="skeleton"></div>
+      <div class="skeleton" style="opacity:0.6;"></div>
     </div>
   </div>
 </div>
 
 <script>
+const LINUX_ICON = '<svg class="download-btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 1.5c-2 0-3.3 1.9-3.3 4.1 0 1-.2 1.8-.7 2.6-.6 1-1.6 1.8-1.6 3.4 0 .8.3 1.4.7 1.9-.5.3-1 .8-1.3 1.4-.5.9-.6 2-.3 3 .1.3 0 .5-.2.7-.4.4-.6.9-.5 1.4.2 1 1.3 1.5 2.6 1.7 1 .1 1.8.5 2.8.6 1.1.1 2.3-.1 3.2-.8.4-.3.9-.3 1.3 0 .9.7 2.1.9 3.2.8 1-.2 1.9-.7 2.8-.6 1.3-.2 2.4-.7 2.6-1.7.1-.5-.1-1-.5-1.4-.2-.2-.3-.4-.2-.7.3-1 .2-2.1-.3-3-.3-.6-.8-1.1-1.3-1.4.4-.5.7-1.1.7-1.9 0-1.6-1-2.4-1.6-3.4-.5-.8-.7-1.6-.7-2.6 0-2.2-1.3-4.1-3.3-4.1Zm-1.2 3.6c.4 0 .8.4.8 1s-.4 1-.8 1-.7-.4-.7-1 .3-1 .7-1Zm2.4 0c.4 0 .7.4.7 1s-.3 1-.7 1-.8-.4-.8-1 .4-1 .8-1Z"/></svg>';
+const WINDOWS_ICON = '<svg class="download-btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.6 10.4 4.6V11.5H3V5.6ZM11.3 4.4 21 3V11.4H11.3V4.4ZM3 12.4H10.4V19.4L3 18.4V12.4ZM11.3 12.4H21V21L11.3 19.6V12.4Z"/></svg>';
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
 (async function() {
-  const res = await fetch('https://api.github.com/repos/akuras22/SyncNotes/releases');
-  if (!res.ok) {
-    document.getElementById('loading-text').textContent = 'Failed to load releases.';
+  const container = document.getElementById('releases-container');
+  let releases;
+  try {
+    const res = await fetch('https://api.github.com/repos/akuras22/SyncNotes/releases');
+    if (!res.ok) throw new Error('bad response');
+    releases = await res.json();
+  } catch (e) {
+    container.innerHTML = '<p class="text-muted" style="margin:0;">Failed to load releases.</p>';
     return;
   }
-  const releases = await res.json();
-  const container = document.getElementById('releases-container');
+
   container.innerHTML = '';
 
-  if (releases.length === 0) {
-    container.innerHTML = '<p class="text-muted">No releases yet.</p>';
+  if (!releases.length) {
+    container.innerHTML = '<div class="empty-state" style="padding:40px 0;"><div class="empty-state-icon">📦</div><p>No releases yet.</p></div>';
     return;
   }
 
-  for (const release of releases) {
+  releases.forEach((release, i) => {
     const linuxAsset = release.assets.find(a => a.name.includes('linux'));
     const windowsAsset = release.assets.find(a => a.name.includes('windows'));
+    const title = esc(release.tag_name + (release.name && release.name !== release.tag_name ? ' — ' + release.name : ''));
+    const date = esc(new Date(release.published_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }));
 
     const div = document.createElement('div');
-    div.className = 'settings-section';
-    div.style.cssText = 'border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:16px;';
+    div.className = 'release-card';
+    div.style.animation = 'rise-in 380ms cubic-bezier(.16,1,.3,1) both';
+    div.style.animationDelay = (i * 50) + 'ms';
 
-    const header = document.createElement('div');
-    header.className = 'flex items-center justify-between';
+    div.innerHTML = `
+      <div class="flex items-center justify-between" style="gap:12px;flex-wrap:wrap;">
+        <div class="flex items-center" style="gap:10px;">
+          <span class="release-version">${title}</span>
+          ${i === 0 ? '<span class="badge badge-green">Latest</span>' : ''}
+        </div>
+        <span class="text-muted text-sm">${date}</span>
+      </div>
+      ${release.body ? `<pre class="release-notes">${esc(release.body)}</pre>` : ''}
+      <div class="flex" style="gap:8px;margin-top:14px;flex-wrap:wrap;">
+        ${windowsAsset ? `<a class="btn btn-primary" href="${esc(windowsAsset.browser_download_url)}">${WINDOWS_ICON} Download for Windows</a>` : ''}
+        ${linuxAsset ? `<a class="btn btn-default" href="${esc(linuxAsset.browser_download_url)}">${LINUX_ICON} Download for Linux</a>` : ''}
+        ${(!linuxAsset && !windowsAsset) ? '<span class="text-muted text-sm">No binaries for this release.</span>' : ''}
+      </div>
+    `;
 
-    const title = document.createElement('h4');
-    title.style.cssText = 'font-size:16px;font-weight:700;margin:0;';
-    title.textContent = release.tag_name + (release.name && release.name !== release.tag_name ? ' — ' + release.name : '');
-
-    const date = document.createElement('span');
-    date.className = 'text-muted text-sm';
-    date.textContent = new Date(release.published_at).toLocaleDateString();
-
-    header.appendChild(title);
-    header.appendChild(date);
-    div.appendChild(header);
-
-    if (release.body) {
-      const notes = document.createElement('pre');
-      notes.style.cssText = 'font-size:13px;color:var(--text-secondary);margin:8px 0;white-space:pre-wrap;font-family:inherit;';
-      notes.textContent = release.body;
-      div.appendChild(notes);
-    }
-
-    const actions = document.createElement('div');
-    actions.className = 'flex';
-    actions.style.cssText = 'gap:8px;margin-top:8px;';
-
-    if (linuxAsset) {
-      const link = document.createElement('a');
-      link.className = 'btn btn-default';
-      link.href = linuxAsset.browser_download_url;
-      link.textContent = 'Download for Linux';
-      actions.appendChild(link);
-    }
-
-    if (windowsAsset) {
-      const link = document.createElement('a');
-      link.className = 'btn btn-primary';
-      link.href = windowsAsset.browser_download_url;
-      link.textContent = 'Download for Windows';
-      actions.appendChild(link);
-    }
-
-    if (!linuxAsset && !windowsAsset) {
-      const span = document.createElement('span');
-      span.className = 'text-muted text-sm';
-      span.textContent = 'No binaries for this release.';
-      actions.appendChild(span);
-    }
-
-    div.appendChild(actions);
     container.appendChild(div);
-  }
+  });
 })();
 </script>
 {% endblock %}
