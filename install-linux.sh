@@ -10,8 +10,10 @@ err()   { echo -e "  ${RED}✘${NC} $*"; }
 header(){ echo -e "\n  ${CYAN}── $* ──${NC}"; }
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cleanup() { exit; }
-trap cleanup INT TERM
+
+cleanup() { tput rmcup 2>/dev/null || true; exit; }
+trap cleanup INT TERM EXIT
+tput smcup 2>/dev/null || true
 
 select_option() {
     local prompt="$1" opt1="$2" opt2="$3"
@@ -293,7 +295,6 @@ EOF
 
 # ── Welcome ────────────────────────────────────────────────────────────────
 
-clear
 echo ""
 echo -e "  ${CYAN}┌──────────────────────────────────────────┐${NC}"
 echo -e "  ${CYAN}│${NC}          ${BLUE}SyncNotes Installer${NC}            ${CYAN}│${NC}"
@@ -301,8 +302,8 @@ echo -e "  ${CYAN}└───────────────────�
 echo ""
 
 if select_option "What would you like to install?" \
-    "Server (Docker)" "Desktop App (Rust)"; then
-    install_server
-else
+    "Desktop App (Rust)" "Server (Docker)"; then
     install_app
+else
+    install_server
 fi

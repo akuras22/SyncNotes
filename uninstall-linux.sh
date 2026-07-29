@@ -11,6 +11,10 @@ header(){ echo -e "\n  ${CYAN}── $* ──${NC}"; }
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+cleanup() { tput rmcup 2>/dev/null || true; }
+trap cleanup INT TERM EXIT
+tput smcup 2>/dev/null || true
+
 select_option() {
     local prompt="$1" opt1="$2" opt2="$3"
     local selected=0
@@ -128,7 +132,6 @@ uninstall_app() {
 
 # ── Main ───────────────────────────────────────────────────────────────────
 
-clear
 echo ""
 echo -e "  ${CYAN}┌──────────────────────────────────────────┐${NC}"
 echo -e "  ${CYAN}│${NC}        ${BLUE}SyncNotes Uninstaller${NC}            ${CYAN}│${NC}"
@@ -136,8 +139,8 @@ echo -e "  ${CYAN}└───────────────────�
 echo ""
 
 if select_option "What would you like to uninstall?" \
-    "Server (Docker)" "Desktop App"; then
-    uninstall_server
-else
+    "Desktop App" "Server (Docker)"; then
     uninstall_app
+else
+    uninstall_server
 fi
