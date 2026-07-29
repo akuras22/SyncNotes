@@ -309,11 +309,9 @@ impl eframe::App for SetupWizard {
                     }
 
                     SetupStep::Done => {
-                        let pulse = (ui.input(|i| i.time) * 2.0).sin() as f32 * 0.5 + 0.5;
-                        ui.colored_label(
-                            theme::lerp_color(theme::SUCCESS, theme::BLUE_LIGHT, pulse * 0.3),
-                            egui::RichText::new("✓ Setup Complete").size(28.0).strong(),
-                        );
+                        theme::success_badge(ui, 56.0);
+                        ui.add_space(14.0);
+                        ui.heading(egui::RichText::new("Setup Complete").size(28.0).strong());
                         ui.add_space(24.0);
                         ui.colored_label(theme::TEXT_SECONDARY, "SyncNotes will keep your files in sync.");
                         ui.add_space(48.0);
@@ -321,7 +319,6 @@ impl eframe::App for SetupWizard {
                             SETUP_COMPLETE.store(true, Ordering::Relaxed);
                             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                         }
-                        ui.ctx().request_repaint();
                     }
                 }
                 

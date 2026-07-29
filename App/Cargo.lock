@@ -4594,6 +4594,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tray-icon",
+ "winit",
 ]
 
 [[package]]

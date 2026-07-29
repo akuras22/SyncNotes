@@ -14,4 +14,15 @@ auto-launch = "0.6"
 dirs = "6"
 image = "0.25"
 tray-icon = "0.19"
+
+# gtk is only needed to drive the tray icon's event loop on Linux (see
+# tray.rs); pulling it in unconditionally breaks Windows builds, since its
+# glib-sys build script requires pkg-config, which windows-latest runners
+# don't have.
+[target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
+
+# Windows drives the tray icon's event loop with winit instead (already in
+# the dependency tree via eframe, so this doesn't pull in anything new).
+[target.'cfg(target_os = "windows")'.dependencies]
+winit = "0.30"

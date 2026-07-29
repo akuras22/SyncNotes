@@ -282,6 +282,7 @@ Terminal=false
 Type=Application
 Categories=Utility;
 Icon=$INSTALL_DIR/syncnotes-icon.png
+StartupWMClass=com.syncnotes.desktop
 EOF
     ok "Desktop entry created"
 

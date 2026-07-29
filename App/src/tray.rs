@@ -1,12 +1,44 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self, JoinHandle};
 use tray_icon::menu::{Menu, MenuEvent, MenuItem};
-use tray_icon::{Icon, TrayIcon, TrayIconBuilder, TrayIconEvent};
+use tray_icon::{Icon, TrayIconBuilder, TrayIconEvent};
 
 pub static SHOULD_QUIT: AtomicBool = AtomicBool::new(false);
 pub static SHOULD_SHOW: AtomicBool = AtomicBool::new(false);
 pub static SHOULD_STOP_TRAY: AtomicBool = AtomicBool::new(false);
 
+fn build_menu() -> Option<Menu> {
+    let show = MenuItem::new("Show Settings", true, None);
+    let show_id = show.id().clone();
+    let quit = MenuItem::new("Quit", true, None);
+    let quit_id = quit.id().clone();
+
+    let menu = Menu::new();
+    if menu.append_items(&[&show, &quit]).is_err() {
+        return None;
+    }
+
+    MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
+        if event.id == quit_id {
+            SHOULD_QUIT.store(true, Ordering::Relaxed);
+        } else if event.id == show_id {
+            SHOULD_SHOW.store(true, Ordering::Relaxed);
+        }
+    }));
+
+    TrayIconEvent::set_event_handler(Some(move |event: TrayIconEvent| {
+        if let TrayIconEvent::Click { .. } = event {
+            SHOULD_SHOW.store(true, Ordering::Relaxed);
+        }
+    }));
+
+    Some(menu)
+}
+
+/// Linux needs a gtk main loop running on the thread that owns the tray
+/// icon (this is how the underlying StatusNotifierItem/AppIndicator
+/// protocol gets pumped) - see the tray-icon crate's own README.
+#[cfg(target_os = "linux")]
 pub fn create_tray() -> Option<JoinHandle<()>> {
     SHOULD_QUIT.store(false, Ordering::Relaxed);
     SHOULD_SHOW.store(false, Ordering::Relaxed);
@@ -21,37 +53,18 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
                 return;
             }
 
-            let icon = load_icon();
-            if icon.is_none() {
-                return;
-            }
+            let icon = match load_icon() {
+                Some(icon) => icon,
+                None => return,
+            };
 
-            let show = MenuItem::new("Show Settings", true, None);
-            let show_id = show.id().clone();
-            let quit = MenuItem::new("Quit", true, None);
-            let quit_id = quit.id().clone();
-
-            let menu = Menu::new();
-            if menu.append_items(&[&show, &quit]).is_err() {
-                return;
-            }
-
-            MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
-                if event.id == quit_id {
-                    SHOULD_QUIT.store(true, Ordering::Relaxed);
-                } else if event.id == show_id {
-                    SHOULD_SHOW.store(true, Ordering::Relaxed);
-                }
-            }));
-
-            TrayIconEvent::set_event_handler(Some(move |event: TrayIconEvent| {
-                if let TrayIconEvent::Click { .. } = event {
-                    SHOULD_SHOW.store(true, Ordering::Relaxed);
-                }
-            }));
+            let menu = match build_menu() {
+                Some(menu) => menu,
+                None => return,
+            };
 
             let tray_icon = match TrayIconBuilder::new()
-                .with_icon(icon.unwrap())
+                .with_icon(icon)
                 .with_menu(Box::new(menu))
                 .with_tooltip("SyncNotes")
                 .build()
@@ -59,8 +72,7 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
                 Ok(tray_icon) => tray_icon,
                 Err(_) => return,
             };
-
-            let _tray_icon: TrayIcon = tray_icon;
+            let _tray_icon = tray_icon;
 
             gtk::glib::timeout_add_local(std::time::Duration::from_millis(200), move || {
                 if SHOULD_QUIT.load(Ordering::Relaxed) || SHOULD_STOP_TRAY.load(Ordering::Relaxed) {
@@ -75,6 +87,92 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
         .ok()?;
 
     Some(handle)
+}
+
+/// Windows needs a native win32 message loop running on the thread that owns
+/// the tray icon, same idea as the Linux gtk loop above. It doesn't need any
+/// window of its own, so we reuse winit (already in the dependency tree via
+/// eframe) purely to pump OS messages on a background thread; the actual
+/// tray/menu clicks arrive through the event handlers set in `build_menu`,
+/// not through this loop.
+#[cfg(target_os = "windows")]
+pub fn create_tray() -> Option<JoinHandle<()>> {
+    use winit::application::ApplicationHandler;
+    use winit::event::WindowEvent;
+    use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
+    use winit::platform::windows::EventLoopBuilderExtWindows;
+    use winit::window::WindowId;
+
+    struct TrayPump;
+
+    impl ApplicationHandler for TrayPump {
+        fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
+
+        fn window_event(
+            &mut self,
+            _event_loop: &ActiveEventLoop,
+            _window_id: WindowId,
+            _event: WindowEvent,
+        ) {
+        }
+
+        fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+            if SHOULD_QUIT.load(Ordering::Relaxed) || SHOULD_STOP_TRAY.load(Ordering::Relaxed) {
+                event_loop.exit();
+                return;
+            }
+            event_loop.set_control_flow(ControlFlow::WaitUntil(
+                std::time::Instant::now() + std::time::Duration::from_millis(200),
+            ));
+        }
+    }
+
+    SHOULD_QUIT.store(false, Ordering::Relaxed);
+    SHOULD_SHOW.store(false, Ordering::Relaxed);
+    SHOULD_STOP_TRAY.store(false, Ordering::Relaxed);
+
+    let handle = thread::Builder::new()
+        .name("tray".into())
+        .spawn(move || {
+            let icon = match load_icon() {
+                Some(icon) => icon,
+                None => return,
+            };
+
+            let menu = match build_menu() {
+                Some(menu) => menu,
+                None => return,
+            };
+
+            let tray_icon = match TrayIconBuilder::new()
+                .with_icon(icon)
+                .with_menu(Box::new(menu))
+                .with_tooltip("SyncNotes")
+                .build()
+            {
+                Ok(tray_icon) => tray_icon,
+                Err(_) => return,
+            };
+            let _tray_icon = tray_icon;
+
+            let event_loop = match EventLoop::builder().with_any_thread(true).build() {
+                Ok(event_loop) => event_loop,
+                Err(_) => return,
+            };
+            event_loop.set_control_flow(ControlFlow::WaitUntil(
+                std::time::Instant::now() + std::time::Duration::from_millis(200),
+            ));
+            let mut app = TrayPump;
+            let _ = event_loop.run_app(&mut app);
+        })
+        .ok()?;
+
+    Some(handle)
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+pub fn create_tray() -> Option<JoinHandle<()>> {
+    None
 }
 
 fn load_icon() -> Option<Icon> {

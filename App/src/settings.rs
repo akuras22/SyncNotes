@@ -129,6 +129,10 @@ impl eframe::App for SettingsWindow {
                     if ui.add(egui::Button::new(
                         egui::RichText::new("Disconnect").color(theme::DESTRUCTIVE),
                     ).min_size(egui::vec2(120.0, 36.0))).clicked() {
+                        // Best-effort: also revoke this device's token server-side so it
+                        // disappears from the website's Authorized Apps list. If the
+                        // server is unreachable we still disconnect locally either way.
+                        crate::auth::revoke_token(&self.config.server_url, &self.config.access_token);
                         AppConfig::delete();
                         DISCONNECT_REQUESTED.store(true, Ordering::Relaxed);
                         ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);

@@ -143,6 +143,34 @@ pub fn primary_button(ui: &mut egui::Ui, text: &str, size: egui::Vec2) -> egui::
     response
 }
 
+/// A circular "success" badge with a hand-drawn checkmark, used instead of
+/// a unicode ✓/✔ glyph — egui's bundled font doesn't include those, so
+/// relying on the character renders as an empty tofu box.
+pub fn success_badge(ui: &mut egui::Ui, diameter: f32) {
+    let (rect, _response) = ui.allocate_exact_size(egui::vec2(diameter, diameter), egui::Sense::hover());
+    if !ui.is_rect_visible(rect) {
+        return;
+    }
+    let painter = ui.painter();
+    let center = rect.center();
+    let radius = diameter / 2.0;
+
+    painter.circle_filled(
+        center,
+        radius,
+        Color32::from_rgba_unmultiplied(SUCCESS.r(), SUCCESS.g(), SUCCESS.b(), 40),
+    );
+    painter.circle_stroke(center, radius, egui::Stroke::new(1.5, SUCCESS));
+
+    let s = diameter * 0.28;
+    let p1 = center + egui::vec2(-s, 0.02 * diameter);
+    let p2 = center + egui::vec2(-s * 0.25, s * 0.7);
+    let p3 = center + egui::vec2(s, -s * 0.6);
+    let stroke = egui::Stroke::new(diameter * 0.09, SUCCESS);
+    painter.line_segment([p1, p2], stroke);
+    painter.line_segment([p2, p3], stroke);
+}
+
 pub fn lerp_color(a: Color32, b: Color32, t: f32) -> Color32 {
     let t = t.clamp(0.0, 1.0);
     Color32::from_rgb(
