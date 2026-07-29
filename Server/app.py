@@ -46,6 +46,9 @@ MIGRATIONS = {
         'ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0',
         'ADD COLUMN current_version_id INTEGER NULL',
     ],
+    'note_version': [
+        'ADD COLUMN pdf_filename VARCHAR(255) NULL',
+    ],
 }
 
 

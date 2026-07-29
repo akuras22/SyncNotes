@@ -35,6 +35,9 @@
             <td>{{ version.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
             <td>{{ version.device_name or 'Web' }}</td>
             <td style="text-align:right;">
+              {% if version.pdf_filename %}
+                <a class="btn btn-sm btn-default" href="{{ url_for('api.download_pdf', relpath=note.relpath, version=version.version_number) }}" target="_blank">PDF</a>
+              {% endif %}
               <a class="btn btn-sm btn-default" href="{{ url_for('api.download_note', relpath=note.relpath, version=version.version_number) }}">Download</a>
             </td>
           </tr>

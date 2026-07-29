@@ -211,9 +211,9 @@ install_server() {
     step "Starting Server"
     cd "$ROOT_DIR/Server"
     if docker compose version &>/dev/null 2>&1; then
-        spin_run "Pulling images and starting containers" docker compose up -d
+        spin_run "Building and starting containers" docker compose up -d --build
     else
-        spin_run "Pulling images and starting containers" docker-compose up -d
+        spin_run "Building and starting containers" docker-compose up -d --build
     fi
 
     ADMIN_USER=$(grep ADMIN_USERNAME "$ROOT_DIR/Server/.env" | cut -d= -f2)

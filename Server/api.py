@@ -1,5 +1,6 @@
 import hashlib
 import os
+import subprocess
 import uuid
 from datetime import datetime, timedelta
 from functools import wraps
@@ -136,6 +137,27 @@ def hash_file(path):
         for chunk in iter(lambda: f.read(65536), b''):
             sha256.update(chunk)
     return sha256.hexdigest()
+
+
+def generate_pdf(rnote_path, pdf_path):
+    """Best-effort: render a .rnote file to PDF via rnote-cli, if it's
+    installed (see Server/Dockerfile). Never raises - a missing binary,
+    a conversion failure, or a timeout just means no PDF this time; the
+    desktop app's fallback (uploading its own locally-rendered PDF) can
+    fill the gap when the server can't do it."""
+    try:
+        result = subprocess.run(
+            [
+                'rnote-cli', 'export', 'doc', rnote_path,
+                '--output-file', pdf_path,
+                '--on-conflict', 'overwrite',
+            ],
+            capture_output=True,
+            timeout=30,
+        )
+        return result.returncode == 0 and os.path.exists(pdf_path)
+    except (OSError, subprocess.SubprocessError):
+        return False
 
 
 # ─── Device Code Auth ───────────────────────────────────────────────────
@@ -282,6 +304,7 @@ def notes_manifest():
                 'size': n.file_size,
                 'updated_at': n.updated_at.isoformat(),
                 'deleted': n.is_deleted,
+                'has_pdf': bool(n.current_version and n.current_version.pdf_filename),
             }
             for n in notes
         ]
@@ -319,6 +342,7 @@ def sync_note():
             'relpath': existing.relpath,
             'version': existing.current_version.version_number,
             'hash': content_hash,
+            'has_pdf': bool(existing.current_version.pdf_filename),
         })
 
     storage_filename = f'{uuid.uuid4()}.rnote'
@@ -367,7 +391,18 @@ def sync_note():
             if attempt == 2:
                 raise
 
-    return jsonify({'relpath': note.relpath, 'version': version.version_number, 'hash': content_hash}), 201
+    rnote_full_path = os.path.join(upload_dir, storage_filename)
+    pdf_full_path = os.path.join(upload_dir, f'{uuid.uuid4()}.pdf')
+    if generate_pdf(rnote_full_path, pdf_full_path):
+        version.pdf_filename = os.path.basename(pdf_full_path)
+        db.session.commit()
+
+    return jsonify({
+        'relpath': note.relpath,
+        'version': version.version_number,
+        'hash': content_hash,
+        'has_pdf': bool(version.pdf_filename),
+    }), 201
 
 
 @api_bp.route('/notes/delete', methods=['POST'])
@@ -409,6 +444,68 @@ def download_note():
         download_name=secure_filename(note.name) + '.rnote',
         as_attachment=True,
     )
+
+
+@api_bp.route('/notes/pdf', methods=['GET'])
+@require_auth
+def download_pdf():
+    relpath = normalize_relpath(request.args.get('relpath', ''))
+    if not relpath:
+        abort(404)
+    note = NoteFile.query.filter_by(
+        user_id=current_user.id, relpath=relpath, is_deleted=False
+    ).first()
+    if not note:
+        abort(404)
+
+    version_number = request.args.get('version', type=int)
+    version = (
+        NoteVersion.query.filter_by(note_file_id=note.id, version_number=version_number).first()
+        if version_number
+        else note.current_version
+    )
+    if not version or not version.pdf_filename:
+        abort(404)
+
+    return send_from_directory(
+        user_upload_dir(),
+        version.pdf_filename,
+        mimetype='application/pdf',
+    )
+
+
+@api_bp.route('/notes/pdf', methods=['POST'])
+@require_auth
+def upload_pdf():
+    """Device-side fallback: if the server couldn't render a PDF itself
+    (rnote-cli not installed on this deployment), a client that has its
+    own local Rnote/rnote-cli can generate one and upload it here."""
+    relpath = normalize_relpath(request.form.get('relpath', ''))
+    version_number = request.form.get('version', type=int)
+    if not relpath or not version_number:
+        return jsonify({'error': 'relpath and version are required'}), 400
+
+    uploaded = request.files.get('pdf')
+    if not uploaded:
+        return jsonify({'error': 'pdf file is required'}), 400
+
+    note = NoteFile.query.filter_by(user_id=current_user.id, relpath=relpath).first()
+    if not note:
+        return jsonify({'error': 'not found'}), 404
+    version = NoteVersion.query.filter_by(
+        note_file_id=note.id, version_number=version_number
+    ).first()
+    if not version:
+        return jsonify({'error': 'version not found'}), 404
+
+    upload_dir = user_upload_dir()
+    os.makedirs(upload_dir, exist_ok=True)
+    pdf_filename = version.pdf_filename or f'{uuid.uuid4()}.pdf'
+    uploaded.save(os.path.join(upload_dir, pdf_filename))
+    version.pdf_filename = pdf_filename
+    db.session.commit()
+
+    return jsonify({'status': 'ok'})
 
 
 @api_bp.route('/notes/<int:note_id>/pdf', methods=['GET'])

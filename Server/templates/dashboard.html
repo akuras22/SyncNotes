@@ -71,8 +71,8 @@
           {% if note.current_version %}
             <a class="btn btn-sm btn-default" href="{{ url_for('api.download_note', relpath=note.relpath) }}">.rnote</a>
           {% endif %}
-          {% if note.pdf_filename %}
-            <a class="btn btn-sm btn-default" href="{{ url_for('api.view_pdf', note_id=note.id) }}" target="_blank">PDF</a>
+          {% if note.current_version and note.current_version.pdf_filename %}
+            <a class="btn btn-sm btn-default" href="{{ url_for('api.download_pdf', relpath=note.relpath) }}" target="_blank">PDF</a>
           {% endif %}
           <a class="btn btn-sm btn-default" href="{{ url_for('web.note_versions', note_id=note.id) }}">History</a>
           <form method="POST" action="{{ url_for('api.delete_note', note_id=note.id) }}"

@@ -135,6 +135,7 @@ class NoteVersion(db.Model):
     content_hash = db.Column(db.String(64), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     device_name = db.Column(db.String(100), nullable=True)
+    pdf_filename = db.Column(db.String(255), nullable=True)
 
     __table_args__ = (
         db.UniqueConstraint(

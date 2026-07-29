@@ -76,6 +76,8 @@ struct ManifestResponse {
 struct SyncResponse {
     version: u64,
     hash: String,
+    #[serde(default)]
+    has_pdf: bool,
 }
 
 pub struct SyncHandle {
@@ -204,7 +206,7 @@ fn reconcile(
                     // server also knows about (fresh install, or a stray
                     // file). Upload wins per LWW - the prior server content
                     // is preserved in version history either way.
-                    if let Some((version, hash)) = upload_file(config, root, &entry.relpath) {
+                    if let Some((version, hash)) = upload_file_with_pdf_fallback(config, root, &entry.relpath) {
                         state.files.insert(entry.relpath.clone(), SyncedFile { hash, version });
                     }
                 } else if let Some(hash) = download_file(config, root, &entry.relpath, None) {
@@ -236,7 +238,7 @@ fn reconcile(
                     }
                     Some(_) => {
                         // Edited locally since last sync - upload, it wins.
-                        if let Some((version, hash)) = upload_file(config, root, &entry.relpath) {
+                        if let Some((version, hash)) = upload_file_with_pdf_fallback(config, root, &entry.relpath) {
                             state.files.insert(entry.relpath.clone(), SyncedFile { hash, version });
                         }
                     }
@@ -254,7 +256,7 @@ fn reconcile(
             }
         });
         for relpath in to_upload {
-            if let Some((version, hash)) = upload_file(config, root, &relpath) {
+            if let Some((version, hash)) = upload_file_with_pdf_fallback(config, root, &relpath) {
                 state.files.insert(relpath, SyncedFile { hash, version });
             }
         }
@@ -291,7 +293,7 @@ fn handle_local_touched(config: &AppConfig, root: &Path, state: &mut SyncState, 
         }
     }
 
-    if let Some((version, hash)) = upload_file(config, root, &relpath) {
+    if let Some((version, hash)) = upload_file_with_pdf_fallback(config, root, &relpath) {
         state.files.insert(relpath, SyncedFile { hash, version });
     }
 }
@@ -360,7 +362,22 @@ fn fetch_manifest(config: &AppConfig) -> Option<Vec<ManifestEntry>> {
     Some(data.files)
 }
 
-fn upload_file(config: &AppConfig, root: &Path, relpath: &str) -> Option<(u64, String)> {
+/// Uploads the file, then - if the server didn't already manage to render
+/// its own PDF (e.g. rnote-cli isn't installed on that deployment) - tries
+/// to render one locally and upload it as a fallback. Best-effort: a
+/// missing/failing local rnote-cli just means no PDF, same as today.
+fn upload_file_with_pdf_fallback(config: &AppConfig, root: &Path, relpath: &str) -> Option<(u64, String)> {
+    let (version, hash, has_pdf) = upload_file(config, root, relpath)?;
+    if !has_pdf {
+        if let Some(pdf_path) = try_local_pdf(root, relpath) {
+            upload_pdf(config, relpath, version, &pdf_path);
+            fs::remove_file(&pdf_path).ok();
+        }
+    }
+    Some((version, hash))
+}
+
+fn upload_file(config: &AppConfig, root: &Path, relpath: &str) -> Option<(u64, String, bool)> {
     let bytes = fs::read(root.join(relpath)).ok()?;
     let url = format!("{}/api/notes/sync", config.server_url.trim_end_matches('/'));
     let form = reqwest::blocking::multipart::Form::new()
@@ -380,7 +397,65 @@ fn upload_file(config: &AppConfig, root: &Path, relpath: &str) -> Option<(u64, S
         return None;
     }
     let data: SyncResponse = resp.json().ok()?;
-    Some((data.version, data.hash))
+    Some((data.version, data.hash, data.has_pdf))
+}
+
+/// Renders relpath to a PDF using a local rnote-cli, if one happens to be
+/// installed on this machine. If the binary isn't found, `Command::output`
+/// fails with `NotFound` and this just returns `None` - no separate "is it
+/// on PATH" probe needed.
+fn try_local_pdf(root: &Path, relpath: &str) -> Option<PathBuf> {
+    let rnote_path = root.join(relpath);
+    let pdf_path = std::env::temp_dir().join(format!("syncnotes-{}.pdf", uuid_like()));
+
+    let output = std::process::Command::new("rnote-cli")
+        .arg("export")
+        .arg("doc")
+        .arg(&rnote_path)
+        .arg("--output-file")
+        .arg(&pdf_path)
+        .arg("--on-conflict")
+        .arg("overwrite")
+        .output()
+        .ok()?;
+
+    if output.status.success() && pdf_path.exists() {
+        Some(pdf_path)
+    } else {
+        None
+    }
+}
+
+fn uuid_like() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    format!("{:x}-{:x}", nanos, std::process::id())
+}
+
+fn upload_pdf(config: &AppConfig, relpath: &str, version: u64, pdf_path: &Path) -> bool {
+    let bytes = match fs::read(pdf_path) {
+        Ok(b) => b,
+        Err(_) => return false,
+    };
+    let url = format!("{}/api/notes/pdf", config.server_url.trim_end_matches('/'));
+    let form = reqwest::blocking::multipart::Form::new()
+        .text("relpath", relpath.to_string())
+        .text("version", version.to_string())
+        .part(
+            "pdf",
+            reqwest::blocking::multipart::Part::bytes(bytes).file_name("upload.pdf"),
+        );
+    let client = reqwest::blocking::Client::new();
+    client
+        .post(&url)
+        .header("Authorization", auth_header(config))
+        .multipart(form)
+        .send()
+        .map(|r| r.status().is_success())
+        .unwrap_or(false)
 }
 
 fn download_file(config: &AppConfig, root: &Path, relpath: &str, version: Option<u64>) -> Option<String> {

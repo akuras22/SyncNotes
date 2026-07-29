@@ -100,9 +100,9 @@ if not exist "Server\instance" mkdir "Server\instance"
 if not exist "Server\uploads" mkdir "Server\uploads"
 
 echo.
-echo   %C_BLUE%-^>%C_RESET% Starting server via Docker Compose...
+echo   %C_BLUE%-^>%C_RESET% Building and starting server via Docker Compose...
 cd Server
-docker compose up -d
+docker compose up -d --build
 if %errorlevel% neq 0 (
     cd ..
     echo   %C_RED%x%C_RESET% Failed to start the server. Check the Docker output above.
