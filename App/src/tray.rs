@@ -39,7 +39,7 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
             }));
 
             TrayIconEvent::set_event_handler(Some(move |event: TrayIconEvent| {
-                if let TrayIconEvent::Click { button: Button::Left, .. } = event {
+                if let TrayIconEvent::Click { .. } = event {
                     SHOULD_SHOW.store(true, Ordering::Relaxed);
                 }
             }));
