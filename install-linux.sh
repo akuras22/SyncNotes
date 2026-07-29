@@ -1,21 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; BLUE='\033[0;34m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
+RED='\033[0;31m'; GREEN='\033[0;32m'; BLUE='\033[0;34m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; BOLD='\033[1m'; DIM='\033[2m'; NC='\033[0m'
+REPO="akuras22/SyncNotes"
 
 info()  { echo -e "  ${BLUE}→${NC} $*"; }
 ok()    { echo -e "  ${GREEN}✔${NC} $*"; }
 warn()  { echo -e "  ${YELLOW}⚠${NC} $*"; }
 err()   { echo -e "  ${RED}✘${NC} $*"; }
-header(){ echo -e "\n  ${CYAN}── $* ──${NC}"; }
+step()  { echo -e "\n  ${CYAN}${BOLD}$*${NC}"; }
+sub()   { echo -e "  ${DIM}$*${NC}"; }
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 finish() {
     echo ""
-    echo -e "  ${GREEN}✔${NC} ${BLUE}Done.${NC}"
+    echo -e "  ${GREEN}✔${NC} ${BOLD}All done.${NC}"
+    echo ""
 }
-clear
+
+banner() {
+    clear 2>/dev/null || true
+    echo -e "  ${CYAN}╭──────────────────────────────────────────╮${NC}"
+    echo -e "  ${CYAN}│${NC}    ${BOLD}${BLUE}SyncNotes${NC} ${DIM}— installer${NC}                 ${CYAN}│${NC}"
+    echo -e "  ${CYAN}╰──────────────────────────────────────────╯${NC}"
+}
 
 select_option() {
     local prompt="$1" opt1="$2" opt2="$3"
@@ -56,6 +65,33 @@ confirm() {
     case "$yn" in y|Y|yes|Yes) return 0 ;; *) return 1 ;; esac
 }
 
+spin_run() {
+    # spin_run "message" cmd args...
+    local msg="$1"; shift
+    local frames='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local logf; logf=$(mktemp)
+    ("$@" >"$logf" 2>&1) &
+    local pid=$!
+    local i=0
+    if [ -t 1 ]; then
+        while kill -0 "$pid" 2>/dev/null; do
+            i=$(((i + 1) % ${#frames}))
+            printf "\r  ${CYAN}%s${NC} %s" "${frames:$i:1}" "$msg"
+            sleep 0.08
+        done
+    fi
+    if wait "$pid"; then
+        printf "\r  ${GREEN}✔${NC} %s\n" "$msg"
+        rm -f "$logf"
+        return 0
+    else
+        printf "\r  ${RED}✘${NC} %s\n" "$msg"
+        sed 's/^/      /' "$logf" >&2
+        rm -f "$logf"
+        return 1
+    fi
+}
+
 # ── Distro detection ───────────────────────────────────────────────────────
 
 detect_distro() {
@@ -65,7 +101,7 @@ detect_distro() {
 }
 
 PKG_MANAGER=""; PKG_UPDATE=""; PKG_INSTALL=""
-PKGS_APP=(libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev)
+PKGS_APP=(libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev libxdo-dev)
 
 setup_pkg_manager() {
     local distro
@@ -74,35 +110,35 @@ setup_pkg_manager() {
         debian|ubuntu|linuxmint|pop|elementary|zorin|raspbian)
             PKG_MANAGER="apt"; PKG_UPDATE="sudo apt-get update -qq"
             PKG_INSTALL="sudo apt-get install -y -qq"
-            PKGS_APP=(libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev) ;;
+            PKGS_APP=(libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev libxdo-dev) ;;
         arch|manjaro|endeavouros|arco|archarm|cachyos)
             PKG_MANAGER="pacman"; PKG_UPDATE="sudo pacman -Sy --noconfirm"
             PKG_INSTALL="sudo pacman -S --noconfirm"
-            PKGS_APP=(gtk3 webkit2gtk-4.1 librsvg) ;;
+            PKGS_APP=(gtk3 webkit2gtk-4.1 librsvg xdotool) ;;
         fedora)
             PKG_MANAGER="dnf"; PKG_UPDATE="sudo dnf check-update -q || true"
             PKG_INSTALL="sudo dnf install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel libxdo-devel) ;;
         rhel|centos|rocky|almalinux)
             PKG_MANAGER="dnf"; PKG_UPDATE="sudo dnf check-update -q || true"
             PKG_INSTALL="sudo dnf install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel libxdo-devel) ;;
         opensuse*|suse)
             PKG_MANAGER="zypper"; PKG_UPDATE="sudo zypper refresh"
             PKG_INSTALL="sudo zypper install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk4-devel librsvg-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk4-devel librsvg-devel libxdo-devel) ;;
         void)
             PKG_MANAGER="xbps"; PKG_UPDATE="sudo xbps-install -S"
             PKG_INSTALL="sudo xbps-install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk-devel librsvg-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk-devel librsvg-devel libxdo-devel) ;;
         alpine)
             PKG_MANAGER="apk"; PKG_UPDATE="sudo apk update"
             PKG_INSTALL="sudo apk add"
-            PKGS_APP=(gtk3-dev webkit2gtk-dev librsvg-dev) ;;
+            PKGS_APP=(gtk3-dev webkit2gtk-dev librsvg-dev libxdo-dev) ;;
         solus)
             PKG_MANAGER="eopkg"; PKG_UPDATE="sudo eopkg update-repo"
             PKG_INSTALL="sudo eopkg install"
-            PKGS_APP=(libgtk-3-devel libwebkit2gtk-4.1-devel librsvg-devel) ;;
+            PKGS_APP=(libgtk-3-devel libwebkit2gtk-4.1-devel librsvg-devel libxdo-devel) ;;
         *)
             PKG_MANAGER="unknown" ;;
     esac
@@ -125,12 +161,11 @@ install_packages() {
 # ── Server Installation ────────────────────────────────────────────────────
 
 install_server() {
-    echo ""
-    header "Server Installation"
+    step "Server Installation"
 
     if ! command -v docker &>/dev/null; then
         err "Docker is not installed."
-        echo "    Install: https://docs.docker.com/engine/install/"
+        sub "Install: https://docs.docker.com/engine/install/"
         exit 1
     fi
     ok "Docker found"
@@ -142,7 +177,7 @@ install_server() {
     ok "Docker Compose found"
 
     if [ ! -f "$ROOT_DIR/Server/.env" ]; then
-        header "Configuration"
+        step "Configuration"
         cp "$ROOT_DIR/Server/.env.example" "$ROOT_DIR/Server/.env"
         SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))" 2>/dev/null || openssl rand -hex 32 2>/dev/null || echo "change-me-to-a-random-key")
         sed -i "s/generate-a-random-key-here/$SECRET/" "$ROOT_DIR/Server/.env"
@@ -173,35 +208,132 @@ install_server() {
 
     mkdir -p "$ROOT_DIR/Server/instance" "$ROOT_DIR/Server/uploads"
 
-    header "Starting Server"
+    step "Starting Server"
     cd "$ROOT_DIR/Server"
     if docker compose version &>/dev/null 2>&1; then
-        docker compose up -d
+        spin_run "Pulling images and starting containers" docker compose up -d
     else
-        docker-compose up -d
+        spin_run "Pulling images and starting containers" docker-compose up -d
     fi
 
     ADMIN_USER=$(grep ADMIN_USERNAME "$ROOT_DIR/Server/.env" | cut -d= -f2)
     ADMIN_PASS=$(grep ADMIN_PASSWORD "$ROOT_DIR/Server/.env" | cut -d= -f2)
 
-    echo ""
-    ok "Server is running!"
-    echo ""
+    step "Server is running"
     echo -e "    ${CYAN}URL:${NC}      http://localhost:2394"
     echo -e "    ${CYAN}Login:${NC}    $ADMIN_USER / $ADMIN_PASS"
     echo ""
-    echo -e "    ${YELLOW}stop:${NC}    cd Server && docker compose down"
-    echo -e "    ${YELLOW}logs:${NC}    cd Server && docker compose logs -f"
-    echo ""
+    echo -e "    ${DIM}stop:${NC}    cd Server && docker compose down"
+    echo -e "    ${DIM}logs:${NC}    cd Server && docker compose logs -f"
     finish
 }
 
 # ── App Installation ───────────────────────────────────────────────────────
 
-install_app() {
-    echo ""
-    header "Desktop App Installation"
+fetch_latest_release_json() {
+    curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null
+}
 
+release_asset_url() {
+    # release_asset_url <json> <substring>
+    echo "$1" | grep -o '"browser_download_url": *"[^"]*"' \
+        | sed -E 's/.*"(https:[^"]+)"/\1/' \
+        | grep "$2" | head -1
+}
+
+release_tag() {
+    echo "$1" | grep -o '"tag_name": *"[^"]*"' | head -1 | sed -E 's/.*"([^"]+)"$/\1/'
+}
+
+install_dir_for_binary() {
+    if [ -w "/usr/local/bin" ]; then
+        echo "/usr/local/bin"
+    else
+        mkdir -p "$HOME/.local/bin"
+        echo "$HOME/.local/bin"
+    fi
+}
+
+write_desktop_entry() {
+    local install_dir="$1"
+    local desktop_dir="$HOME/.local/share/applications"
+    mkdir -p "$desktop_dir"
+    cat > "$desktop_dir/syncnotes.desktop" <<EOF
+[Desktop Entry]
+Name=SyncNotes
+Comment=Sync your Rnotes to SyncNotes server
+Exec=$install_dir/syncnotes
+Terminal=false
+Type=Application
+Categories=Utility;
+Icon=$install_dir/syncnotes-icon.png
+StartupWMClass=com.syncnotes.desktop
+EOF
+}
+
+add_to_path() {
+    local install_dir="$1"
+    [[ ":$PATH:" == *":$install_dir:"* ]] && return 0
+    local target="$HOME/.$(basename "$SHELL")rc"
+    [ -f "$target" ] || target="$HOME/.profile"
+    if ! grep -q "PATH=\"\$PATH:$install_dir\"" "$target" 2>/dev/null; then
+        { echo ""; echo "export PATH=\"\$PATH:$install_dir\""; } >> "$target"
+        ok "Added $install_dir to PATH in $(basename "$target")"
+        sub "restart your shell, or run: source $target"
+    fi
+}
+
+app_success_message() {
+    local version="$1"
+    echo ""
+    ok "SyncNotes ${version:+$version }installed!"
+    echo ""
+    echo -e "    ${CYAN}Run:${NC}  syncnotes"
+    echo ""
+    echo "    First run will guide you through setup."
+    echo "    Default server: https://notes.huebler.tech"
+    finish
+}
+
+install_app_prebuilt() {
+    step "Downloading Prebuilt Binary"
+
+    local arch; arch=$(uname -m)
+    if [ "$arch" != "x86_64" ]; then
+        warn "Only x86_64 binaries are published (detected: $arch)."
+        return 1
+    fi
+
+    info "Checking latest release..."
+    local json; json=$(fetch_latest_release_json) || true
+    if [ -z "${json:-}" ] || ! echo "$json" | grep -q browser_download_url; then
+        warn "Could not reach GitHub releases."
+        return 1
+    fi
+
+    local url; url=$(release_asset_url "$json" "linux")
+    if [ -z "$url" ]; then
+        warn "No Linux binary found in the latest release."
+        return 1
+    fi
+    local version; version=$(release_tag "$json")
+    ok "Latest release: ${version:-unknown}"
+
+    local install_dir; install_dir=$(install_dir_for_binary)
+    spin_run "Downloading syncnotes ($install_dir)" curl -fsSL "$url" -o "$install_dir/syncnotes" || return 1
+    chmod +x "$install_dir/syncnotes"
+    ok "Binary → $install_dir/syncnotes"
+
+    cp "$ROOT_DIR/syncnotes-icon.png" "$install_dir/syncnotes-icon.png" 2>/dev/null || true
+    write_desktop_entry "$install_dir"
+    ok "Desktop entry created"
+    add_to_path "$install_dir"
+
+    app_success_message "$version"
+    return 0
+}
+
+install_app_source() {
     if ! command -v cargo &>/dev/null; then
         info "Installing Rust via rustup..."
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -213,7 +345,7 @@ install_app() {
 
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         setup_pkg_manager
-        header "System Dependencies"
+        step "System Dependencies"
         PC_NAMES=("gtk+-3.0" "webkit2gtk-4.1" "librsvg-2.0")
         MISSING_PKGS=()
         for pc in "${PC_NAMES[@]}"; do
@@ -248,75 +380,68 @@ install_app() {
         fi
     fi
 
-    header "Building"
-    info "Compiling..."
+    step "Building"
     cd "$ROOT_DIR/App"
-    cargo build --release
+    spin_run "Compiling (this can take a few minutes)" cargo build --release
 
     BINARY="$ROOT_DIR/App/target/release/syncnotes-app"
     if [ ! -f "$BINARY" ]; then
         err "Build failed"
         exit 1
     fi
-    ok "Build complete"
 
-    header "Installing"
-    INSTALL_DIR="/usr/local/bin"
-    if [ ! -w "$INSTALL_DIR" ]; then
-        INSTALL_DIR="$HOME/.local/bin"
-        mkdir -p "$INSTALL_DIR"
-    fi
-    cp "$BINARY" "$INSTALL_DIR/syncnotes"
-    cp "$ROOT_DIR/syncnotes-icon.png" "$INSTALL_DIR/syncnotes-icon.png"
-    ok "Binary → $INSTALL_DIR/syncnotes"
-    ok "Icon   → $INSTALL_DIR/syncnotes-icon.png"
+    step "Installing"
+    local install_dir; install_dir=$(install_dir_for_binary)
+    cp "$BINARY" "$install_dir/syncnotes"
+    cp "$ROOT_DIR/syncnotes-icon.png" "$install_dir/syncnotes-icon.png"
+    ok "Binary → $install_dir/syncnotes"
+    ok "Icon   → $install_dir/syncnotes-icon.png"
 
-    DESKTOP_DIR="$HOME/.local/share/applications"
-    mkdir -p "$DESKTOP_DIR"
-    cat > "$DESKTOP_DIR/syncnotes.desktop" <<EOF
-[Desktop Entry]
-Name=SyncNotes
-Comment=Sync your Rnotes to SyncNotes server
-Exec=$INSTALL_DIR/syncnotes
-Terminal=false
-Type=Application
-Categories=Utility;
-Icon=$INSTALL_DIR/syncnotes-icon.png
-StartupWMClass=com.syncnotes.desktop
-EOF
+    write_desktop_entry "$install_dir"
     ok "Desktop entry created"
+    add_to_path "$install_dir"
 
-    if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-        local target
-        SHELL_CONFIG="$HOME/.$(basename "$SHELL")rc"
-        if [ -f "$SHELL_CONFIG" ] || [ -f "$HOME/.profile" ]; then
-            target="${SHELL_CONFIG:-$HOME/.profile}"
-            if ! grep -q "export PATH=\"\$PATH:$INSTALL_DIR\"" "$target" 2>/dev/null; then
-                echo "" >> "$target"
-                echo "export PATH=\"\$PATH:$INSTALL_DIR\"" >> "$target"
-                ok "Added to PATH in $target"
-                info "Restart your shell or run: source $target"
+    app_success_message ""
+}
+
+install_app() {
+    step "Desktop App Installation"
+
+    for existing in "/usr/local/bin/syncnotes" "$HOME/.local/bin/syncnotes"; do
+        if [ -f "$existing" ]; then
+            warn "SyncNotes is already installed at $existing"
+            if ! confirm "Reinstall / update it?"; then
+                echo ""
+                info "Nothing to do."
+                exit 0
             fi
+            break
         fi
+    done
+
+    local use_prebuilt=1
+    if [[ "$OSTYPE" != "linux-gnu"* ]] || ! command -v curl &>/dev/null; then
+        use_prebuilt=0
+    elif select_option "How would you like to install?" \
+        "Download prebuilt binary (fast, recommended)" "Build from source (for developers)"; then
+        use_prebuilt=1
+    else
+        use_prebuilt=0
     fi
 
-    echo ""
-    ok "SyncNotes installed!"
-    echo ""
-    echo -e "    ${CYAN}Run:${NC}  syncnotes"
-    echo ""
-    echo "    First run will guide you through setup."
-    echo "    Default server: https://notes.huebler.tech"
-    echo ""
-    finish
+    if [ "$use_prebuilt" = "1" ]; then
+        if install_app_prebuilt; then
+            return 0
+        fi
+        warn "Falling back to building from source."
+    fi
+
+    install_app_source
 }
 
 # ── Welcome ────────────────────────────────────────────────────────────────
 
-echo -e "  ${CYAN}┌──────────────────────────────────────────┐${NC}"
-echo -e "  ${CYAN}│${NC}          ${BLUE}SyncNotes Installer${NC}            ${CYAN}│${NC}"
-echo -e "  ${CYAN}└──────────────────────────────────────────┘${NC}"
-echo ""
+banner
 
 if select_option "What would you like to install?" \
     "Desktop App (Rust)" "Server (Docker)"; then
