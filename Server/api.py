@@ -38,9 +38,10 @@ def resolve_geo(ip: str) -> str | None:
 
 
 def get_client_ip() -> str:
-    cf_ip = request.headers.get('CF-Connecting-IP', '')
-    if cf_ip and '.' in cf_ip:
-        return cf_ip
+    for header in ('CF-Connecting-IP', 'X-Real-IP'):
+        ip = request.headers.get(header, '')
+        if ip and '.' in ip:
+            return ip
     raw = request.headers.get('X-Forwarded-For', request.remote_addr or '')
     ips = [ip.strip() for ip in raw.split(',') if ip.strip()]
     v4 = [ip for ip in ips if '.' in ip]
@@ -97,6 +98,7 @@ def request_device_code():
     client_name = data.get('client_name', 'Unknown Device')
 
     ip = get_client_ip()
+    print(f'[device] CF-Connecting-IP={request.headers.get("CF-Connecting-IP","?")} X-Real-IP={request.headers.get("X-Real-IP","?")} X-Forwarded-For={request.headers.get("X-Forwarded-For","?")} remote_addr={request.remote_addr} got={ip}')
     ua = (request.headers.get('User-Agent', '') or '')[:512]
     location = resolve_geo(ip) if ip else None
 
