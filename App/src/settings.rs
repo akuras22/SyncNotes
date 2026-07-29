@@ -1,9 +1,6 @@
 use crate::config::AppConfig;
 use crate::theme;
-use crate::tray::{SHOULD_QUIT, SHOULD_SHOW};
 use eframe::egui;
-use std::sync::atomic::Ordering;
-use std::time::Duration;
 
 pub struct SettingsWindow {
     config: AppConfig,
@@ -39,28 +36,6 @@ impl SettingsWindow {
 impl eframe::App for SettingsWindow {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx();
-
-        if SHOULD_QUIT.load(Ordering::Relaxed) {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-            return;
-        }
-
-        if SHOULD_SHOW.swap(false, Ordering::Relaxed) {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
-            ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(false));
-        }
-
-        let close_requested = ctx.input(|i| i.viewport().close_requested());
-        if close_requested {
-            if self.config.show_tray_icon {
-                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
-                ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
-            }
-        }
-
-        if !close_requested {
-            ctx.request_repaint_after(Duration::from_millis(200));
-        }
 
         if let Some(cmd) = egui::ViewportCommand::center_on_screen(ctx) {
             ctx.send_viewport_cmd(cmd);

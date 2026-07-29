@@ -7,15 +7,11 @@ use tray_icon::{Icon, TrayIconBuilder};
 use crate::icon::load_logo_rgba;
 
 pub static SHOULD_QUIT: AtomicBool = AtomicBool::new(false);
-pub static SHOULD_SHOW: AtomicBool = AtomicBool::new(false);
 
-pub fn create_tray() {
-    let icon = match make_tray_icon() {
-        Some(i) => i,
-        None => return,
-    };
+pub fn create_tray() -> Option<thread::JoinHandle<()>> {
+    let icon = make_tray_icon()?;
 
-    thread::Builder::new()
+    let handle = thread::Builder::new()
         .name("tray".into())
         .spawn(move || {
             if gtk::init().is_err() {
@@ -23,7 +19,6 @@ pub fn create_tray() {
             }
 
             let show = MenuItem::new("Show Settings", true, None);
-            let show_id = show.id().clone();
             let quit = MenuItem::new("Quit", true, None);
             let quit_id = quit.id().clone();
 
@@ -35,8 +30,6 @@ pub fn create_tray() {
             MenuEvent::set_event_handler(Some(move |event: tray_icon::menu::MenuEvent| {
                 if event.id == quit_id {
                     SHOULD_QUIT.store(true, Ordering::Relaxed);
-                } else if event.id == show_id {
-                    SHOULD_SHOW.store(true, Ordering::Relaxed);
                 }
             }));
 
@@ -52,10 +45,15 @@ pub fn create_tray() {
 
             loop {
                 gtk::main_iteration_do(false);
+                if SHOULD_QUIT.load(Ordering::Relaxed) {
+                    break;
+                }
                 thread::sleep(Duration::from_millis(100));
             }
         })
-        .ok();
+        .ok()?;
+
+    Some(handle)
 }
 
 fn make_tray_icon() -> Option<Icon> {
