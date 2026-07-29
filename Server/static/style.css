@@ -1024,7 +1024,11 @@ a:hover {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 16px;
-  animation: fade-in 260ms var(--ease) both;
+  /* No animation here on purpose: opacity/transform animations create a
+     permanent stacking context for as long as animation-name is set
+     (regardless of fill-mode or whether it has finished playing), which
+     trapped the note_view.html download dropdown below the full-bleed PDF
+     toolbar that follows .container as a later sibling in the DOM. */
 }
 
 .container-narrow {

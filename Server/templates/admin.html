@@ -50,8 +50,8 @@
             <td>{{ u.created_at|de_date }}</td>
             <td>{{ u.active_notes_count() }}</td>
             <td style="text-align:right;">
-              <a class="btn btn-sm btn-default" href="{{ url_for('web.admin_view_notes', user_id=u.id) }}">View Notes</a>
               {% if u.id != current_user.id %}
+                <a class="btn btn-sm btn-default" href="{{ url_for('web.admin_view_notes', user_id=u.id) }}">View Notes</a>
                 <button class="btn btn-sm btn-default" onclick="document.getElementById('editModal-{{ u.id }}').style.display='flex'">Edit</button>
                 <form method="POST" action="{{ url_for('web.toggle_admin', user_id=u.id) }}" style="display:inline;">
                   <button type="submit" class="btn btn-sm btn-default">{{ 'Demote' if u.is_admin() else 'Make Admin' }}</button>
@@ -139,7 +139,10 @@
                 {{ u.username[0]|upper }}
               {% endif %}
             </span>
-            <input class="form-input" type="file" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" style="flex:1;">
+            <input type="file" name="avatar" id="avatar-input-{{ u.id }}" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;"
+                   onchange="document.getElementById('avatar-filename-{{ u.id }}').textContent = this.files[0] ? this.files[0].name : 'No file chosen'">
+            <button type="button" class="btn btn-sm btn-default" onclick="document.getElementById('avatar-input-{{ u.id }}').click()">Change Picture</button>
+            <span class="text-muted text-sm" id="avatar-filename-{{ u.id }}">No file chosen</span>
           </div>
           {% if u.avatar_filename %}
           <label class="flex items-center text-sm" style="gap:6px;margin-top:8px;font-weight:500;cursor:pointer;">
