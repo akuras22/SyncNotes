@@ -29,7 +29,7 @@
             <a class="btn btn-sm btn-default" href="{{ url_for('api.view_pdf', note_id=note.id) }}" target="_blank">PDF</a>
           {% endif %}
           <form method="POST" action="{{ url_for('api.delete_note', note_id=note.id) }}"
-                onsubmit="return confirm('Delete {{ note.name }}?');" style="margin-left:auto;">
+                onsubmit="return swalConfirm('Delete {{ note.name|e }}?', this);" style="margin-left:auto;">
             <button type="submit" class="btn btn-sm btn-destructive">Delete</button>
           </form>
         </div>

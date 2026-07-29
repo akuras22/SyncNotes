@@ -45,7 +45,7 @@
                   <button type="submit" class="btn btn-sm btn-default">{{ 'Unlock' if u.is_locked() else 'Lock' }}</button>
                 </form>
                 <form method="POST" action="{{ url_for('web.delete_user', user_id=u.id) }}"
-                      onsubmit="return confirm('Delete user {{ u.username }} and all their data?');" style="display:inline;">
+                      onsubmit="return swalConfirm('Delete user {{ u.username|e }} and all their data?', this);" style="display:inline;">
                   <button type="submit" class="btn btn-sm btn-destructive">Delete</button>
                 </form>
               {% else %}

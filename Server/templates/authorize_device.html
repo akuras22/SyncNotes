@@ -35,7 +35,7 @@
           <div class="flex items-center" style="gap:6px;">
             <span class="text-muted text-sm">Created {{ token.created_at.strftime('%Y-%m-%d') }}</span>
             <button class="btn btn-sm btn-flat" onclick="startRename({{ token.id }})">Rename</button>
-            <form method="POST" action="{{ url_for('web.delete_token', token_id=token.id) }}" onsubmit="return confirm('Revoke this token? The app will be logged out immediately.');" style="display:inline;">
+            <form method="POST" action="{{ url_for('web.delete_token', token_id=token.id) }}" onsubmit="return swalConfirm('Revoke this token? The app will be logged out immediately.', this);" style="display:inline;">
               <button class="btn btn-sm btn-destructive" type="submit">Revoke</button>
             </form>
           </div>
