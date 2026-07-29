@@ -30,6 +30,17 @@
 </div>
 {% endif %}
 
+<div class="flex items-center justify-between mb-4">
+  <h3 style="font-size:19px;font-weight:800;margin:0;letter-spacing:-0.02em;">{{ "Notes" if current_path else "My Notes" }}</h3>
+  {% if folders or notes %}
+  <span class="text-muted text-sm">
+    {%- if folders -%}{{ folders|length }} folder{{ '' if folders|length == 1 else 's' }}{%- endif -%}
+    {%- if folders and notes %} &middot; {% endif -%}
+    {%- if notes -%}{{ notes|length }} note{{ '' if notes|length == 1 else 's' }}{%- endif -%}
+  </span>
+  {% endif %}
+</div>
+
 {% if folders %}
   <div class="note-grid mb-4">
     {% for folder in folders %}
@@ -44,13 +55,6 @@
     {% endfor %}
   </div>
 {% endif %}
-
-<div class="flex items-center justify-between mb-4">
-  <h3 style="font-size:19px;font-weight:800;margin:0;letter-spacing:-0.02em;">{{ "Notes" if current_path else "My Notes" }}</h3>
-  {% if notes %}
-  <span class="text-muted text-sm">{{ notes|length }} note{{ '' if notes|length == 1 else 's' }}</span>
-  {% endif %}
-</div>
 
 {% if notes %}
   <div class="note-grid">
