@@ -12,6 +12,13 @@
       <p class="text-muted" style="margin:0 0 24px;">
         You can close this window and return to the app.
       </p>
+      {% if ip %}
+      <div class="text-muted text-sm" style="line-height:1.7;text-align:left;background:var(--bg-card);padding:12px;border-radius:6px;">
+        <div>IP: <code style="color:var(--text);background:var(--bg);padding:1px 6px;border-radius:3px;">{{ ip }}</code></div>
+        {% if location %}<div>Location: {{ location }}</div>{% endif %}
+        {% if ua %}<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ ua }}">Device: {{ ua[:80] }}{% if ua|length > 80 %}...{% endif %}</div>{% endif %}
+      </div>
+      {% endif %}
     {% elif code %}
       <div style="margin:24px 0;">
         <div style="font-size:40px;margin-bottom:16px;">&#128274;</div>

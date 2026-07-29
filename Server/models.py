@@ -48,6 +48,9 @@ class DeviceCode(db.Model):
     is_authorized = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime, nullable=False)
+    authorized_ip = db.Column(db.String(45), nullable=True)
+    authorized_user_agent = db.Column(db.String(512), nullable=True)
+    authorized_location = db.Column(db.String(200), nullable=True)
 
     def is_expired(self):
         return datetime.utcnow() > self.expires_at

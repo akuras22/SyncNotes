@@ -37,6 +37,14 @@ def resolve_geo(ip: str) -> str | None:
     return None
 
 
+def get_client_ip() -> str:
+    raw = request.headers.get('X-Forwarded-For', request.remote_addr or '')
+    ips = [ip.strip() for ip in raw.split(',') if ip.strip()]
+    v4 = [ip for ip in ips if '.' in ip]
+    return (v4 or ips)[0]
+
+
+
 def require_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -45,9 +53,7 @@ def require_auth(f):
             token_str = auth[7:]
             token = ApiToken.query.filter_by(token=token_str).first()
             if token:
-                ip = request.headers.get('X-Forwarded-For', request.remote_addr or '')
-                if ip and ',' in ip:
-                    ip = ip.split(',')[0].strip()
+                ip = get_client_ip()
                 ua = (request.headers.get('User-Agent', '') or '')[:512]
                 token.last_used_at = datetime.utcnow()
                 token.last_ip = ip or None
@@ -119,10 +125,19 @@ def check_device_status():
         return jsonify({'status': 'authorization_pending'})
 
     token_str = ApiToken.generate_token()
+    ip = get_client_ip()
+    ua = (request.headers.get('User-Agent', '') or '')[:512]
+    location = None
+    if ip:
+        location = resolve_geo(ip)
     token = ApiToken(
         token=token_str,
         name=f'Device: {code.client_name}',
         user_id=code.user_id,
+        last_ip=code.authorized_ip or ip,
+        last_user_agent=code.authorized_user_agent or ua,
+        last_location=code.authorized_location or location,
+        last_used_at=datetime.utcnow(),
     )
     db.session.add(token)
     db.session.delete(code)
