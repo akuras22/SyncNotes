@@ -63,11 +63,9 @@ fn run_setup() {
 }
 
 fn run_settings(config: AppConfig) {
-    let _tray = if config.show_tray_icon {
-        tray::create_tray()
-    } else {
-        None
-    };
+    if config.show_tray_icon {
+        tray::create_tray();
+    }
 
     let icon = load_icon();
     let mut vp = egui::ViewportBuilder::default()

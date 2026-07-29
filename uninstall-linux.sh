@@ -14,8 +14,6 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 finish() {
     echo ""
     echo -e "  ${GREEN}✔${NC} ${BLUE}Done.${NC}"
-    echo -e "  ${YELLOW}Press Enter to close${NC}"
-    read -r
 }
 clear
 
