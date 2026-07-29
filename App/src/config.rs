@@ -9,6 +9,7 @@ pub struct AppConfig {
     pub rnotes_dir: String,
     pub autostart: bool,
     pub sync_subdirs: bool,
+    #[serde(default)]
     pub show_tray_icon: bool,
 }
 

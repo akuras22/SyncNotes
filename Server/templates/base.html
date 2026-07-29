@@ -29,7 +29,10 @@
 </head>
 <body>
   <header class="headerbar">
-    <a class="headerbar-title" href="{{ url_for('web.dashboard') }}">SyncNotes</a>
+    <a class="headerbar-title" href="{{ url_for('web.dashboard') }}">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="" style="height:28px;vertical-align:middle;margin-right:8px;border-radius:4px;">
+      SyncNotes
+    </a>
     {% if current_user.is_authenticated %}
     <nav class="headerbar-nav">
       <a class="headerbar-btn{% if request.endpoint == 'web.dashboard' %} active{% endif %}" href="{{ url_for('web.dashboard') }}">Notes</a>

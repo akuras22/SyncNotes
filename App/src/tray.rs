@@ -21,7 +21,7 @@ pub fn start_tray() {
     };
 
     use tray_icon::menu::{Menu, MenuItem};
-    let mut menu = Menu::new();
+    let menu = Menu::new();
     let show = MenuItem::new("Open Settings", true, None);
     let quit = MenuItem::new("Quit", true, None);
     menu.append(&show);
@@ -38,6 +38,7 @@ pub fn start_tray() {
     };
 
     TRAY_RUNNING.store(true, Ordering::Relaxed);
+    Box::leak(Box::new(tray));
 
     let show_id = show.id();
     let quit_id = quit.id();
@@ -66,6 +67,4 @@ pub fn start_tray() {
             }
         }
     });
-
-    let _ = tray;
 }
