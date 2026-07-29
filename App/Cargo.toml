@@ -13,7 +13,12 @@ rfd = { version = "0.17", default-features = false, features = ["xdg-portal"] }
 auto-launch = "0.6"
 dirs = "6"
 image = "0.25"
-tray-icon = "0.19"
+# default-features off: the only thing that pulls in is Linux's "libxdo"
+# feature, used solely for the predefined Copy/Cut/Paste/SelectAll menu
+# items via X11 keystroke simulation. We only ever build custom MenuItems
+# (Show Settings / Quit), so we don't need it - and skipping it means
+# end users and CI don't need libxdo installed at all just to link.
+tray-icon = { version = "0.19", default-features = false }
 
 # gtk is only needed to drive the tray icon's event loop on Linux (see
 # tray.rs); pulling it in unconditionally breaks Windows builds, since its
