@@ -729,8 +729,11 @@ a:hover {
   border-radius: 10px;
   background: var(--gradient-brand-soft);
   border: 1px solid rgba(53, 132, 228, 0.25);
+  color: var(--blue-light);
   font-size: 17px;
 }
+
+.note-card-icon svg { width: 18px; height: 18px; }
 
 .note-card-title {
   font-size: 15px;
@@ -770,8 +773,11 @@ a:hover {
   border-radius: 20px;
   background: var(--gradient-brand-soft);
   border: 1px solid rgba(53, 132, 228, 0.25);
+  color: var(--blue-light);
   font-size: 30px;
 }
+
+.empty-state-icon svg { width: 30px; height: 30px; }
 
 .empty-state p {
   font-size: 15px;

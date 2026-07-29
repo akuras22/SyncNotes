@@ -4,7 +4,9 @@
 <div class="panel mb-4">
   <div class="panel-body flex items-center justify-between" style="gap:20px;flex-wrap:wrap;">
     <div class="flex items-center" style="gap:16px;">
-      <div class="note-card-icon" style="width:44px;height:44px;font-size:19px;">📤</div>
+      <div class="note-card-icon" style="width:44px;height:44px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:21px;height:21px;"><path d="M7 18a4.5 4.5 0 0 1-1-8.9 5.5 5.5 0 0 1 10.8-1.7A4.5 4.5 0 0 1 17 18H7Z"/><path d="M12 12v7"/><path d="M9.5 14.5 12 12l2.5 2.5"/></svg>
+      </div>
       <div>
         <p style="margin:0;font-size:15px;font-weight:600;">Upload notes from the desktop app</p>
         <p class="text-muted text-sm" style="margin:2px 0 0;">Your .rnote files sync automatically once the app is connected.</p>
@@ -26,7 +28,9 @@
     {% for note in notes %}
       <div class="note-card" style="animation-delay: {{ loop.index0 * 40 }}ms;">
         <div class="note-card-head">
-          <div class="note-card-icon">📝</div>
+          <div class="note-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+          </div>
           <h4 class="note-card-title" title="{{ note.name }}">{{ note.name }}</h4>
         </div>
         <p class="note-card-meta">
@@ -50,7 +54,9 @@
   </div>
 {% else %}
   <div class="empty-state panel">
-    <div class="empty-state-icon">📓</div>
+    <div class="empty-state-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+    </div>
     <p>No notes yet. Use the desktop app to upload your first one!</p>
   </div>
 {% endif %}
