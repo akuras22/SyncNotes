@@ -120,6 +120,28 @@ def authorize_device():
     )
 
 
+@web_bp.route('/authorize-device/tokens/<int:token_id>/rename', methods=['POST'])
+@login_required
+def rename_token(token_id):
+    token = ApiToken.query.filter_by(id=token_id, user_id=current_user.id).first_or_404()
+    name = request.form.get('name', '').strip()
+    if name:
+        token.name = f'Device: {name}'
+        db.session.commit()
+        flash('Token renamed.', 'success')
+    return redirect(url_for('web.authorize_device'))
+
+
+@web_bp.route('/authorize-device/tokens/<int:token_id>/delete', methods=['POST'])
+@login_required
+def delete_token(token_id):
+    token = ApiToken.query.filter_by(id=token_id, user_id=current_user.id).first_or_404()
+    db.session.delete(token)
+    db.session.commit()
+    flash('Token revoked. The app will be logged out on next sync.', 'success')
+    return redirect(url_for('web.authorize_device'))
+
+
 @web_bp.route('/oauth/authorize', methods=['GET', 'POST'])
 @login_required
 def oauth_authorize():

@@ -109,6 +109,37 @@ def check_device_status():
     })
 
 
+# ─── Token Management API ─────────────────────────────────────────────
+
+
+@api_bp.route('/auth/verify', methods=['GET'])
+@require_auth
+def verify_token():
+    return jsonify({'status': 'ok', 'user': current_user.username})
+
+
+@api_bp.route('/auth/tokens/<int:token_id>', methods=['PATCH'])
+@require_auth
+def rename_token(token_id):
+    token = ApiToken.query.filter_by(id=token_id, user_id=current_user.id).first_or_404()
+    data = request.get_json(silent=True) or {}
+    new_name = data.get('name', '').strip()
+    if not new_name:
+        return jsonify({'error': 'name is required'}), 400
+    token.name = new_name
+    db.session.commit()
+    return jsonify({'status': 'ok', 'name': token.name})
+
+
+@api_bp.route('/auth/tokens/<int:token_id>', methods=['DELETE'])
+@require_auth
+def delete_token(token_id):
+    token = ApiToken.query.filter_by(id=token_id, user_id=current_user.id).first_or_404()
+    db.session.delete(token)
+    db.session.commit()
+    return jsonify({'status': 'deleted'})
+
+
 # ─── Notes API ──────────────────────────────────────────────────────────
 
 

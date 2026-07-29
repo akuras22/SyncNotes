@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Authorize App — SyncNotes{% endblock %}
+{% block title %}Authorized Apps — SyncNotes{% endblock %}
 {% block content %}
 <div class="panel">
-  <div class="panel-header">Authorize an App</div>
+  <div class="panel-header">Authorize a New App</div>
   <div class="panel-body">
     <p class="text-muted" style="margin-top:0;">Enter the code shown in the app to link it to your account.</p>
-    <form method="POST">
+    <form method="POST" action="{{ url_for('web.authorize_device') }}">
       <div class="form-row">
         <div class="form-group">
           <input class="form-input" type="text" name="user_code" value="{{ request.args.get('code', '') }}" placeholder="ABCD-1234" required autofocus
@@ -21,15 +21,41 @@
   <div class="panel-header">Authorized Apps</div>
   <div class="panel-body">
     {% if tokens %}
-      {% for token in tokens if token.name.startswith('Device:') %}
-        <div class="flex items-center justify-between" style="padding:12px 0;border-bottom:1px solid var(--border);">
-          <span>{{ token.name[8:] }}</span>
-          <span class="text-muted text-sm">Created {{ token.created_at.strftime('%Y-%m-%d') }}</span>
+      {% for token in tokens %}
+        {% if token.name.startswith('Device:') %}
+        <div class="flex items-center justify-between" style="padding:12px 0;border-bottom:1px solid var(--border);" id="token-{{ token.id }}">
+          <div class="flex items-center" style="gap:8px;">
+            <span class="token-name" data-id="{{ token.id }}">{{ token.name[8:] }}</span>
+            <form method="POST" action="{{ url_for('web.rename_token', token_id=token.id) }}" class="inline-form" style="display:none;" id="rename-form-{{ token.id }}">
+              <input class="form-input" type="text" name="name" value="{{ token.name[8:] }}" style="width:180px;padding:4px 8px;font-size:14px;" required>
+              <button class="btn btn-sm btn-primary" type="submit">Save</button>
+              <button class="btn btn-sm btn-flat" type="button" onclick="cancelRename({{ token.id }})">Cancel</button>
+            </form>
+          </div>
+          <div class="flex items-center" style="gap:6px;">
+            <span class="text-muted text-sm">Created {{ token.created_at.strftime('%Y-%m-%d') }}</span>
+            <button class="btn btn-sm btn-flat" onclick="startRename({{ token.id }})">Rename</button>
+            <form method="POST" action="{{ url_for('web.delete_token', token_id=token.id) }}" onsubmit="return confirm('Revoke this token? The app will be logged out immediately.');" style="display:inline;">
+              <button class="btn btn-sm btn-destructive" type="submit">Revoke</button>
+            </form>
+          </div>
         </div>
+        {% endif %}
       {% endfor %}
     {% else %}
       <p class="text-muted" style="margin:0;">No apps authorized yet.</p>
     {% endif %}
   </div>
 </div>
+
+<script>
+function startRename(id) {
+  document.querySelector('#token-' + id + ' .token-name').style.display = 'none';
+  document.querySelector('#rename-form-' + id).style.display = 'inline';
+}
+function cancelRename(id) {
+  document.querySelector('#token-' + id + ' .token-name').style.display = 'inline';
+  document.querySelector('#rename-form-' + id).style.display = 'none';
+}
+</script>
 {% endblock %}

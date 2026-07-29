@@ -15,14 +15,22 @@ fn main() {
     match config {
         None => run_setup(),
         Some(cfg) => {
-            if cfg.show_tray_icon {
-                tray::start_tray();
-                run_settings(cfg);
-                loop {
-                    std::thread::sleep(Duration::from_secs(86400));
+            let token_valid = !cfg.access_token.is_empty()
+                && auth::verify_token(&cfg.server_url, &cfg.access_token);
+
+            if token_valid {
+                if cfg.show_tray_icon {
+                    tray::start_tray();
+                    run_settings(cfg);
+                    loop {
+                        std::thread::sleep(Duration::from_secs(86400));
+                    }
+                } else {
+                    run_settings(cfg);
                 }
             } else {
-                run_settings(cfg);
+                AppConfig::delete();
+                run_setup();
             }
         }
     }

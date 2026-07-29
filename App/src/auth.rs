@@ -99,3 +99,19 @@ pub fn poll_auth_status(
 
     on_status(AuthStatus::Expired);
 }
+
+pub fn verify_token(server_url: &str, token: &str) -> bool {
+    let url = format!(
+        "{}/api/auth/verify",
+        server_url.trim_end_matches('/')
+    );
+    let client = reqwest::blocking::Client::new();
+    match client
+        .get(&url)
+        .header("Authorization", format!("Bearer {}", token))
+        .send()
+    {
+        Ok(resp) => resp.status() == 200,
+        Err(_) => false,
+    }
+}
