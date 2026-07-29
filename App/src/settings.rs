@@ -54,18 +54,16 @@ impl eframe::App for SettingsWindow {
                 ui.heading(egui::RichText::new("SyncNotes Settings").size(24.0).strong());
                 ui.add_space(24.0);
 
-                let frame = egui::Frame {
+                egui::Frame {
                     fill: egui::Color32::from_rgb(0x2d, 0x2d, 0x2d),
                     corner_radius: egui::CornerRadius::same(8),
                     stroke: egui::Stroke::new(1.0, egui::Color32::from_rgb(0x4a, 0x4a, 0x4a)),
                     inner_margin: egui::Margin::symmetric(16, 16),
                     ..Default::default()
-                };
-
-                frame.show(ui, |ui| {
-                    ui.vertical_centered(|ui| {
+                }.show(ui, |ui| {
+                    ui.set_max_width(440.0);
                     egui::Grid::new("settings_grid")
-                        .spacing([12.0, 16.0])
+                        .spacing([12.0, 12.0])
                         .min_col_width(120.0)
                         .show(ui, |ui| {
                             ui.label("Server URL:");
@@ -99,14 +97,17 @@ impl eframe::App for SettingsWindow {
                             ui.label("Sync:");
                             ui.checkbox(&mut self.config.sync_subdirs, "Include subdirectories");
                             ui.end_row();
+
+                            ui.label("Tray Icon:");
+                            ui.checkbox(&mut self.config.show_tray_icon, "Show in system tray");
+                            ui.end_row();
                         });
-                    });
                 });
 
                 ui.add_space(24.0);
 
                 ui.horizontal(|ui| {
-                    ui.add_space((ui.available_width() - 250.0) / 2.0);
+                    ui.add_space((ui.available_width() - 260.0) / 2.0);
                     if ui.add(egui::Button::new("Save").min_size(egui::vec2(120.0, 32.0))).clicked() {
                         self.config.server_url = self.server_url_edit.trim().to_string();
                         self.config.rnotes_dir = self.rnotes_dir_edit.trim().to_string();

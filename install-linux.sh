@@ -72,35 +72,35 @@ setup_pkg_manager() {
         debian|ubuntu|linuxmint|pop|elementary|zorin|raspbian)
             PKG_MANAGER="apt"; PKG_UPDATE="sudo apt-get update -qq"
             PKG_INSTALL="sudo apt-get install -y -qq"
-            PKGS_APP=(libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev) ;;
+            PKGS_APP=(libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev libappindicator3-dev) ;;
         arch|manjaro|endeavouros|arco|archarm|cachyos)
             PKG_MANAGER="pacman"; PKG_UPDATE="sudo pacman -Sy --noconfirm"
             PKG_INSTALL="sudo pacman -S --noconfirm"
-            PKGS_APP=(gtk3 webkit2gtk-4.1 librsvg) ;;
+            PKGS_APP=(gtk3 webkit2gtk-4.1 librsvg libappindicator-gtk3) ;;
         fedora)
             PKG_MANAGER="dnf"; PKG_UPDATE="sudo dnf check-update -q || true"
             PKG_INSTALL="sudo dnf install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel libappindicator-gtk3-devel) ;;
         rhel|centos|rocky|almalinux)
             PKG_MANAGER="dnf"; PKG_UPDATE="sudo dnf check-update -q || true"
             PKG_INSTALL="sudo dnf install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel libappindicator-gtk3-devel) ;;
         opensuse*|suse)
             PKG_MANAGER="zypper"; PKG_UPDATE="sudo zypper refresh"
             PKG_INSTALL="sudo zypper install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk4-devel librsvg-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk4-devel librsvg-devel libappindicator3-devel) ;;
         void)
             PKG_MANAGER="xbps"; PKG_UPDATE="sudo xbps-install -S"
             PKG_INSTALL="sudo xbps-install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk-devel librsvg-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk-devel librsvg-devel libappindicator-gtk3-devel) ;;
         alpine)
             PKG_MANAGER="apk"; PKG_UPDATE="sudo apk update"
             PKG_INSTALL="sudo apk add"
-            PKGS_APP=(gtk3-dev webkit2gtk-dev librsvg-dev) ;;
+            PKGS_APP=(gtk3-dev webkit2gtk-dev librsvg-dev libappindicator-gtk3-dev) ;;
         solus)
             PKG_MANAGER="eopkg"; PKG_UPDATE="sudo eopkg update-repo"
             PKG_INSTALL="sudo eopkg install"
-            PKGS_APP=(libgtk-3-devel libwebkit2gtk-4.1-devel librsvg-devel) ;;
+            PKGS_APP=(libgtk-3-devel libwebkit2gtk-4.1-devel librsvg-devel libappindicator-gtk3-devel) ;;
         *)
             PKG_MANAGER="unknown" ;;
     esac

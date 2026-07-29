@@ -63,6 +63,12 @@ fn run_setup() {
 }
 
 fn run_settings(config: AppConfig) {
+    let _tray = if config.show_tray_icon {
+        tray::create_tray()
+    } else {
+        None
+    };
+
     let icon = load_icon();
     let mut vp = egui::ViewportBuilder::default()
         .with_inner_size([540.0, 520.0])
@@ -80,7 +86,7 @@ fn run_settings(config: AppConfig) {
     eframe::run_native(
         "SyncNotes Settings",
         options,
-        Box::new(|_cc| Ok(Box::new(settings::SettingsWindow::new(config)))),
+        Box::new(move |_cc| Ok(Box::new(settings::SettingsWindow::new(config)))),
     )
     .ok();
 }
