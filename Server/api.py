@@ -227,6 +227,23 @@ def delete_token(token_id):
     return jsonify({'status': 'deleted'})
 
 
+@api_bp.route('/auth/token', methods=['DELETE'])
+@require_auth
+def revoke_own_token():
+    """Let a client revoke the exact token it authenticated with (used by
+    the desktop app's Disconnect action, so disconnecting locally also
+    removes the device from the user's Authorized Apps on the website)."""
+    auth = request.headers.get('Authorization', '')
+    if not auth.startswith('Bearer '):
+        return jsonify({'error': 'bearer_token_required'}), 400
+    token_str = auth[7:]
+    token = ApiToken.query.filter_by(token=token_str, user_id=current_user.id).first()
+    if token:
+        db.session.delete(token)
+        db.session.commit()
+    return jsonify({'status': 'deleted'})
+
+
 # ─── Notes API ──────────────────────────────────────────────────────────
 
 

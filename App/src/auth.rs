@@ -115,3 +115,24 @@ pub fn verify_token(server_url: &str, token: &str) -> bool {
         Err(_) => false,
     }
 }
+
+/// Best-effort: ask the server to revoke this device's token, so
+/// disconnecting locally also removes it from the user's Authorized Apps
+/// on the website. Failures (offline, unreachable server, ...) are not
+/// fatal - the caller should still disconnect locally either way.
+pub fn revoke_token(server_url: &str, token: &str) -> bool {
+    if token.is_empty() {
+        return false;
+    }
+    let url = format!("{}/api/auth/token", server_url.trim_end_matches('/'));
+    let client = reqwest::blocking::Client::new();
+    match client
+        .delete(&url)
+        .header("Authorization", format!("Bearer {}", token))
+        .timeout(Duration::from_secs(5))
+        .send()
+    {
+        Ok(resp) => resp.status().is_success(),
+        Err(_) => false,
+    }
+}
