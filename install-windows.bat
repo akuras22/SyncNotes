@@ -168,7 +168,7 @@ echo.
 echo [OK] SyncNotes app installed successfully!
 echo.
 echo   Run it:        !INSTALL_DIR!\syncnotes.exe
-echo   Settings:      syncnotes.exe --settings
+echo   Run it:        syncnotes.exe
 echo.
 echo   The app will guide you through setup on first run.
 echo   It will connect to https://notes.huebler.tech by default.

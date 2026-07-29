@@ -82,7 +82,7 @@ Syncs `.rnote` files from a local folder to the SyncNotes server.
 syncnotes
 
 # Settings window
-syncnotes --settings
+syncnotes
 ```
 
 The setup wizard will:
@@ -150,7 +150,7 @@ SyncNotes/
 ```bash
 cd App
 cargo run                 # Run the desktop app
-cargo run -- --settings   # Open settings
+cargo run               # Open app (setup or settings)
 
 cd Server
 python app.py             # Run the server directly
