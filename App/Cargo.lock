@@ -4587,6 +4587,7 @@ dependencies = [
  "dirs",
  "eframe",
  "egui",
+ "gtk",
  "image",
  "reqwest",
  "rfd",
