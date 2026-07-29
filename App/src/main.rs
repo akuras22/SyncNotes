@@ -1,5 +1,6 @@
 mod auth;
 mod config;
+mod icon;
 mod settings;
 mod setup;
 mod theme;
@@ -7,17 +8,11 @@ mod tray;
 
 use config::AppConfig;
 use eframe::egui;
+use icon::load_logo_rgba;
 
 fn load_icon() -> Option<egui::IconData> {
-    let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
-    let small = img.resize_exact(64, 64, image::imageops::FilterType::Lanczos3);
-    let rgba = small.to_rgba8();
-    let (w, h) = rgba.dimensions();
-    Some(egui::IconData {
-        rgba: rgba.as_raw().clone(),
-        width: w,
-        height: h,
-    })
+    let (rgba, w, h) = load_logo_rgba(64)?;
+    Some(egui::IconData { rgba, width: w, height: h })
 }
 
 fn main() {

@@ -4,11 +4,13 @@ use std::time::Duration;
 use tray_icon::menu::{Menu, MenuEvent, MenuItem};
 use tray_icon::{Icon, TrayIconBuilder};
 
+use crate::icon::load_logo_rgba;
+
 pub static SHOULD_QUIT: AtomicBool = AtomicBool::new(false);
 pub static SHOULD_SHOW: AtomicBool = AtomicBool::new(false);
 
 pub fn create_tray() {
-    let icon = match load_tray_icon() {
+    let icon = match make_tray_icon() {
         Some(i) => i,
         None => return,
     };
@@ -56,9 +58,7 @@ pub fn create_tray() {
         .ok();
 }
 
-fn load_tray_icon() -> Option<Icon> {
-    let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
-    let small = img.resize_exact(64, 64, image::imageops::FilterType::Lanczos3);
-    let rgba = small.to_rgba8();
-    Icon::from_rgba(rgba.as_raw().clone(), rgba.width(), rgba.height()).ok()
+fn make_tray_icon() -> Option<Icon> {
+    let (rgba, w, h) = load_logo_rgba(64)?;
+    Icon::from_rgba(rgba, w, h).ok()
 }
