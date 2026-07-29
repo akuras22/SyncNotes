@@ -33,11 +33,13 @@ impl eframe::App for SettingsWindow {
                 ui.heading(egui::RichText::new("SyncNotes Settings").size(24.0).strong());
                 ui.add_space(24.0);
 
-                let frame = egui::Frame::none()
-                    .fill(egui::Color32::from_rgb(0x2d, 0x2d, 0x2d))
-                    .corner_radius(8.0)
-                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(0x4a, 0x4a, 0x4a)))
-                    .inner_margin(16.0);
+                let frame = egui::Frame {
+                    fill: egui::Color32::from_rgb(0x2d, 0x2d, 0x2d),
+                    corner_radius: egui::CornerRadius::same(8),
+                    stroke: egui::Stroke::new(1.0, egui::Color32::from_rgb(0x4a, 0x4a, 0x4a)),
+                    margin: egui::Margin::symmetric(16.0, 16.0),
+                    ..Default::default()
+                };
 
                 frame.show(ui, |ui| {
                     egui::Grid::new("settings_grid")

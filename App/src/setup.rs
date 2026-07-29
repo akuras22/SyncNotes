@@ -175,11 +175,12 @@ impl eframe::App for SetupWizard {
                             ui.label("Enter this code on the authorization page:");
                             ui.add_space(16.0);
 
-                            egui::Frame::none()
-                                .fill(egui::Color32::from_rgb(0x2a, 0x2a, 0x2a))
-                                .corner_radius(8.0)
-                                .inner_margin(24.0)
-                                .show(ui, |ui| {
+                            egui::Frame {
+                                fill: egui::Color32::from_rgb(0x2a, 0x2a, 0x2a),
+                                corner_radius: egui::CornerRadius::same(8),
+                                margin: egui::Margin::symmetric(24.0, 24.0),
+                                ..Default::default()
+                            }.show(ui, |ui| {
                                     ui.heading(egui::RichText::new(&info.user_code)
                                         .size(36.0)
                                         .color(egui::Color32::from_rgb(0x35, 0x84, 0xe4))

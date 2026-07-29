@@ -1,7 +1,7 @@
 use std::thread;
 use std::time::Duration;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DeviceCodeInfo {
     pub user_code: String,
     pub verification_uri: String,
