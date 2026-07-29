@@ -1,4 +1,5 @@
 use crate::config::AppConfig;
+use notify::event::{EventKind, ModifyKind, RenameMode};
 use notify::RecursiveMode;
 use notify_debouncer_full::{new_debouncer, DebounceEventResult};
 use serde::{Deserialize, Serialize};
@@ -22,6 +23,7 @@ const DEBOUNCE_WINDOW: Duration = Duration::from_millis(1500);
 
 enum SyncEvent {
     LocalTouched(PathBuf),
+    Renamed(PathBuf, PathBuf),
     PollTick,
 }
 
@@ -80,6 +82,7 @@ struct SyncResponse {
     has_pdf: bool,
 }
 
+
 pub struct SyncHandle {
     pub join: thread::JoinHandle<()>,
 }
@@ -124,6 +127,20 @@ fn run(config: AppConfig, tx: mpsc::Sender<SyncEvent>, rx: mpsc::Receiver<SyncEv
     let debouncer = new_debouncer(DEBOUNCE_WINDOW, None, move |result: DebounceEventResult| {
         if let Ok(events) = result {
             for event in events {
+                // notify-debouncer-full correlates a rename's "from" and "to"
+                // halves into one event when it can, so a plain edit-in-place
+                // rename shows up as a single clean pair here rather than a
+                // Remove+Create - handle that specially so it's treated as a
+                // rename (keeping version history) instead of losing it.
+                if let EventKind::Modify(ModifyKind::Name(RenameMode::Both)) = event.kind {
+                    if event.paths.len() == 2 {
+                        let _ = tx.send(SyncEvent::Renamed(
+                            event.paths[0].clone(),
+                            event.paths[1].clone(),
+                        ));
+                        continue;
+                    }
+                }
                 for path in &event.paths {
                     let _ = tx.send(SyncEvent::LocalTouched(path.clone()));
                 }
@@ -153,6 +170,10 @@ fn run(config: AppConfig, tx: mpsc::Sender<SyncEvent>, rx: mpsc::Receiver<SyncEv
         match rx.recv_timeout(Duration::from_millis(500)) {
             Ok(SyncEvent::LocalTouched(path)) => {
                 handle_local_touched(&config, &root, &mut state, &path);
+                state.save();
+            }
+            Ok(SyncEvent::Renamed(from, to)) => {
+                handle_renamed(&config, &root, &mut state, &from, &to);
                 state.save();
             }
             Ok(SyncEvent::PollTick) => {
@@ -295,6 +316,59 @@ fn handle_local_touched(config: &AppConfig, root: &Path, state: &mut SyncState, 
 
     if let Some((version, hash)) = upload_file_with_pdf_fallback(config, root, &relpath) {
         state.files.insert(relpath, SyncedFile { hash, version });
+    }
+}
+
+/// Handles a cleanly-matched rename pair from the debouncer. Renames the
+/// NoteFile server-side (keeping its version history) instead of letting
+/// it fall through to the normal delete+upload path, which would make the
+/// history look like it belonged to a deleted file and start a brand new
+/// one at version 1.
+fn handle_renamed(config: &AppConfig, root: &Path, state: &mut SyncState, from: &Path, to: &Path) {
+    let to_relpath = match relpath_for(root, to) {
+        Some(r) => r,
+        None => return,
+    };
+    let from_relpath = match relpath_for(root, from) {
+        Some(r) => r,
+        None => {
+            // "from" is outside the watched root (moved in from elsewhere) -
+            // nothing to rename server-side, just upload "to" fresh.
+            handle_local_touched(config, root, state, to);
+            return;
+        }
+    };
+
+    if !is_rnote(&to_relpath) || (!config.sync_subdirs && to_relpath.contains('/')) {
+        // Renamed to something we don't sync (or now out of sync_subdirs
+        // scope) - treat the old path as a plain local removal.
+        if state.files.contains_key(&from_relpath) && delete_remote(config, &from_relpath) {
+            state.files.remove(&from_relpath);
+        }
+        return;
+    }
+
+    let known = match state.files.get(&from_relpath).cloned() {
+        // Never synced this path before - nothing to preserve, just upload
+        // fresh at the new name.
+        None => {
+            handle_local_touched(config, root, state, to);
+            return;
+        }
+        Some(known) => known,
+    };
+
+    if rename_remote(config, &from_relpath, &to_relpath) {
+        state.files.remove(&from_relpath);
+        state.files.insert(to_relpath, known);
+    } else {
+        // Target collided with an existing/deleted note server-side, or the
+        // request failed outright - fall back to the safe delete+upload
+        // path so nothing is lost, even though history won't carry over.
+        if delete_remote(config, &from_relpath) {
+            state.files.remove(&from_relpath);
+        }
+        handle_local_touched(config, root, state, to);
     }
 }
 
@@ -483,6 +557,18 @@ fn download_file(config: &AppConfig, root: &Path, relpath: &str, version: Option
     let mut hasher = Sha256::new();
     hasher.update(&bytes);
     Some(hasher.finalize().iter().map(|b| format!("{:02x}", b)).collect())
+}
+
+fn rename_remote(config: &AppConfig, from_relpath: &str, to_relpath: &str) -> bool {
+    let url = format!("{}/api/notes/rename", config.server_url.trim_end_matches('/'));
+    let client = reqwest::blocking::Client::new();
+    client
+        .post(&url)
+        .header("Authorization", auth_header(config))
+        .form(&[("from_relpath", from_relpath), ("to_relpath", to_relpath)])
+        .send()
+        .map(|r| r.status().is_success())
+        .unwrap_or(false)
 }
 
 fn delete_remote(config: &AppConfig, relpath: &str) -> bool {

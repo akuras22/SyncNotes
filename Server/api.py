@@ -417,6 +417,51 @@ def delete_note_sync():
     return jsonify({'status': 'deleted'})
 
 
+@api_bp.route('/notes/rename', methods=['POST'])
+@require_auth
+def rename_note_sync():
+    """Renaming/moving a file locally should keep its version history
+    instead of looking like a delete-and-recreate, so this updates the
+    existing NoteFile's relpath in place. relpath has a unique constraint
+    per user (deleted rows keep theirs forever, for history), so a target
+    already in use - even by a soft-deleted note - is rejected; the client
+    falls back to its normal delete+upload path in that rare case."""
+    from_relpath = normalize_relpath(request.form.get('from_relpath', ''))
+    to_relpath = normalize_relpath(request.form.get('to_relpath', ''))
+    if not from_relpath or not to_relpath or not to_relpath.lower().endswith('.rnote'):
+        return jsonify({'error': 'invalid relpath'}), 400
+
+    note = NoteFile.query.filter_by(
+        user_id=current_user.id, relpath=from_relpath, is_deleted=False
+    ).first()
+    if not note:
+        return jsonify({'error': 'not found'}), 404
+
+    if from_relpath == to_relpath:
+        return jsonify({
+            'relpath': note.relpath,
+            'version': note.current_version.version_number if note.current_version else 0,
+            'hash': note.current_version.content_hash if note.current_version else None,
+            'has_pdf': bool(note.current_version and note.current_version.pdf_filename),
+        })
+
+    collision = NoteFile.query.filter_by(user_id=current_user.id, relpath=to_relpath).first()
+    if collision and collision.id != note.id:
+        return jsonify({'error': 'target already exists'}), 409
+
+    note.relpath = to_relpath
+    note.name = os.path.splitext(os.path.basename(to_relpath))[0]
+    note.updated_at = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({
+        'relpath': note.relpath,
+        'version': note.current_version.version_number if note.current_version else 0,
+        'hash': note.current_version.content_hash if note.current_version else None,
+        'has_pdf': bool(note.current_version and note.current_version.pdf_filename),
+    })
+
+
 @api_bp.route('/notes/download', methods=['GET'])
 @require_auth
 def download_note():
