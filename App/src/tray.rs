@@ -1,7 +1,8 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self, JoinHandle};
 use tray_icon::menu::{Menu, MenuEvent, MenuItem};
-use tray_icon::{Icon, TrayIconBuilder, TrayIconEvent};
+use tray_icon::{ClickType, Icon, TrayIconBuilder, TrayIconEvent};
+use image::GenericImageView;
 
 pub static SHOULD_QUIT: AtomicBool = AtomicBool::new(false);
 pub static SHOULD_SHOW: AtomicBool = AtomicBool::new(false);
@@ -30,7 +31,7 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
             }
 
             TrayIconEvent::set_event_handler(Some(move |event: TrayIconEvent| {
-                if let TrayIconEvent::Click { button: tray_icon::ClickType::Left, .. } = event {
+                if let TrayIconEvent::Click { button: ClickType::Left, .. } = event {
                     SHOULD_SHOW.store(true, Ordering::Relaxed);
                 }
             }));
@@ -53,12 +54,12 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
                 return;
             }
 
-            glib::timeout_add_local(std::time::Duration::from_millis(200), move || {
+            gtk::glib::timeout_add_local(std::time::Duration::from_millis(200), move || {
                 if SHOULD_QUIT.load(Ordering::Relaxed) {
                     gtk::main_quit();
-                    glib::ControlFlow::Break
+                    gtk::glib::ControlFlow::Break
                 } else {
-                    glib::ControlFlow::Continue
+                    gtk::glib::ControlFlow::Continue
                 }
             });
             gtk::main();
