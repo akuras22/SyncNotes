@@ -57,6 +57,15 @@ body {
   letter-spacing: -0.01em;
 }
 
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  vertical-align: middle;
+  margin-right: 8px;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04);
+}
+
 .headerbar-nav {
   display: flex;
   align-items: center;
@@ -262,6 +271,82 @@ body {
 
 .window-body {
   padding: 20px 24px 24px;
+}
+
+.auth-window {
+  overflow: hidden;
+}
+
+.auth-hero {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  padding: 8px 4px 4px;
+}
+
+.auth-success {
+  padding-top: 16px;
+}
+
+.auth-icon {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(53,132,228,0.16), rgba(53,132,228,0.06));
+  border: 1px solid rgba(53,132,228,0.22);
+  font-size: 36px;
+  line-height: 1;
+  box-shadow: var(--shadow);
+}
+
+.auth-icon-success {
+  color: var(--success);
+}
+
+.auth-title {
+  margin: 10px 0 0;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.auth-copy {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.auth-subcopy {
+  margin: -4px 0 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.auth-meta {
+  width: 100%;
+  max-width: 380px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.auth-meta-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.auth-meta-value {
+  font-size: 14px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .window-footer {

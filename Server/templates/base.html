@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}SyncNotes{% endblock %}</title>
-  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=9">
+  <link rel="icon" href="{{ url_for('static', filename='syncnotes-icon.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=10">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
   function swalConfirm(msg, form) {
@@ -30,7 +30,7 @@
 <body>
   <header class="headerbar">
     <a class="headerbar-title" href="{{ url_for('web.dashboard') }}">
-      <img src="{{ url_for('static', filename='logo.png') }}" alt="" style="height:28px;vertical-align:middle;margin-right:8px;border-radius:4px;">
+      <img class="brand-mark" src="{{ url_for('static', filename='syncnotes-icon.png') }}" alt="">
       SyncNotes
     </a>
     {% if current_user.is_authenticated %}

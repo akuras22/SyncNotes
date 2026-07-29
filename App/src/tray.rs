@@ -78,7 +78,7 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
 }
 
 fn load_icon() -> Option<Icon> {
-    let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
+    let img = image::load_from_memory(include_bytes!("../../syncnotes-icon.png")).ok()?;
     let rgba = trim_transparent(img.to_rgba8());
     let (w, h) = rgba.dimensions();
     let target = 256;

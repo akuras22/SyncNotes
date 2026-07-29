@@ -107,7 +107,7 @@ uninstall_app() {
         fi
     done
 
-    for path in "/usr/local/bin/logo.png" "$HOME/.local/bin/logo.png"; do
+    for path in "/usr/local/bin/syncnotes-icon.png" "$HOME/.local/bin/syncnotes-icon.png"; do
         [ -f "$path" ] && rm -f "$path" && ok "Removed $path"
     done
 

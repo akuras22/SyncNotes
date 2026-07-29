@@ -24,8 +24,6 @@
     {% for code in pending %}
     <div class="text-muted text-xs" style="line-height:1.6;padding:4px 0;">
       <span style="font-weight:500;">{{ code.client_name }}</span>
-      {% if code.authorized_ip %} — <code style="color:var(--text);background:var(--bg);padding:0 4px;border-radius:2px;font-size:11px;">{{ code.authorized_ip }}</code>{% endif %}
-      {% if code.authorized_location %} — {{ code.authorized_location }}{% endif %}
       <span> — expires {{ code.expires_at.strftime('%H:%M UTC') }}</span>
     </div>
     {% endfor %}
@@ -57,12 +55,6 @@
             <div>Created: {{ token.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</div>
             {% if token.last_used_at %}
             <div>Last used: {{ token.last_used_at.strftime('%Y-%m-%d %H:%M UTC') }}</div>
-            {% endif %}
-            {% if token.last_ip %}
-            <div>IP: <code style="color:var(--text);background:var(--bg-card);padding:1px 6px;border-radius:3px;">{{ token.last_ip }}</code></div>
-            {% endif %}
-            {% if token.last_location %}
-            <div>Location: {{ token.last_location }}</div>
             {% endif %}
             {% if token.last_user_agent %}
             <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:560px;" title="{{ token.last_user_agent }}">Device: {{ token.last_user_agent[:100] }}{% if token.last_user_agent|length > 100 %}...{% endif %}</div>

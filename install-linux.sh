@@ -267,9 +267,9 @@ install_app() {
         mkdir -p "$INSTALL_DIR"
     fi
     cp "$BINARY" "$INSTALL_DIR/syncnotes"
-    cp "$ROOT_DIR/logo.png" "$INSTALL_DIR/logo.png"
+    cp "$ROOT_DIR/syncnotes-icon.png" "$INSTALL_DIR/syncnotes-icon.png"
     ok "Binary → $INSTALL_DIR/syncnotes"
-    ok "Logo   → $INSTALL_DIR/logo.png"
+    ok "Icon   → $INSTALL_DIR/syncnotes-icon.png"
 
     DESKTOP_DIR="$HOME/.local/share/applications"
     mkdir -p "$DESKTOP_DIR"
@@ -281,7 +281,7 @@ Exec=$INSTALL_DIR/syncnotes
 Terminal=false
 Type=Application
 Categories=Utility;
-Icon=$INSTALL_DIR/logo.png
+Icon=$INSTALL_DIR/syncnotes-icon.png
 EOF
     ok "Desktop entry created"
 

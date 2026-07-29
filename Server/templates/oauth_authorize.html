@@ -1,39 +1,33 @@
 {% extends "base.html" %}
 {% block title %}Authorize App — SyncNotes{% endblock %}
 {% block content %}
-<div class="window" style="max-width:480px;">
+<div class="window auth-window" style="max-width:520px;">
   <div class="window-header">
     <h1 class="window-title">Authorize App</h1>
   </div>
   <div class="window-body text-center">
     {% if authorized %}
-      <div style="font-size:48px;margin:24px 0;">&#10003;</div>
-      <h2 style="margin:0 0 8px;">Device Authorized</h2>
-      <p class="text-muted" style="margin:0 0 24px;">
-        You can close this window and return to the app.
-      </p>
-      {% if ip %}
-      <div class="text-muted text-sm" style="line-height:1.7;text-align:left;background:var(--bg-card);padding:12px;border-radius:6px;">
-        <div>IP: <code style="color:var(--text);background:var(--bg);padding:1px 6px;border-radius:3px;">{{ ip }}</code></div>
-        {% if location %}<div>Location: {{ location }}</div>{% endif %}
-        {% if ua %}<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ ua }}">Device: {{ ua[:80] }}{% if ua|length > 80 %}...{% endif %}</div>{% endif %}
+      <div class="auth-hero auth-success">
+        <div class="auth-icon auth-icon-success">&#10003;</div>
+        <h2 class="auth-title">Device Authorized</h2>
+        <p class="auth-copy">You can close this window and return to the app.</p>
+        {% if ua %}
+        <div class="auth-meta">
+          <div class="auth-meta-label">Device</div>
+          <div class="auth-meta-value" title="{{ ua }}">{{ ua[:90] }}{% if ua|length > 90 %}...{% endif %}</div>
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
     {% elif code %}
-      <div style="margin:24px 0;">
-        <div style="font-size:40px;margin-bottom:16px;">&#128274;</div>
-        <h2 style="margin:0 0 8px;">Allow this app?</h2>
-        <p class="text-muted" style="margin:0 0 4px;">
-          <strong>{{ code.client_name or 'SyncNotes Desktop' }}</strong> wants to connect to your account.
-        </p>
-        <p class="text-muted" style="margin:0 0 24px;font-size:13px;">
-          This will grant access to sync your notes.
-        </p>
-        {% if code.authorized_ip %}
-        <div class="text-muted text-sm" style="line-height:1.7;text-align:left;background:var(--bg-card);padding:12px;border-radius:6px;margin-bottom:24px;">
-          <div>IP: <code style="color:var(--text);background:var(--bg);padding:1px 6px;border-radius:3px;">{{ code.authorized_ip }}</code></div>
-          {% if code.authorized_location %}<div>Location: {{ code.authorized_location }}</div>{% endif %}
-          {% if code.authorized_user_agent %}<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ code.authorized_user_agent }}">Device: {{ code.authorized_user_agent[:80] }}{% if code.authorized_user_agent|length > 80 %}...{% endif %}</div>{% endif %}
+      <div class="auth-hero">
+        <div class="auth-icon">&#128274;</div>
+        <h2 class="auth-title">Allow this app?</h2>
+        <p class="auth-copy"><strong>{{ code.client_name or 'SyncNotes Desktop' }}</strong> wants to connect to your account.</p>
+        <p class="auth-subcopy">This will grant access to sync your notes.</p>
+        {% if code.authorized_user_agent %}
+        <div class="auth-meta">
+          <div class="auth-meta-label">Device</div>
+          <div class="auth-meta-value" title="{{ code.authorized_user_agent }}">{{ code.authorized_user_agent[:90] }}{% if code.authorized_user_agent|length > 90 %}...{% endif %}</div>
         </div>
         {% endif %}
         <form method="POST">
