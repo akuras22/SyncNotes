@@ -31,6 +31,13 @@ enum SyncEvent {
 struct SyncedFile {
     hash: String,
     version: u64,
+    /// The server's stable NoteFile uuid. Lets reconcile() recognize "this
+    /// relpath I've never seen is actually a rename of a relpath I already
+    /// know" instead of treating it as delete-old + download-new. Empty for
+    /// entries written before this field existed; those self-heal the next
+    /// time that file is touched (see reconcile()).
+    #[serde(default)]
+    uuid: String,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -63,6 +70,8 @@ impl SyncState {
 
 #[derive(Debug, Deserialize)]
 struct ManifestEntry {
+    #[serde(default)]
+    uuid: String,
     relpath: String,
     version: u64,
     #[serde(default)]
@@ -76,6 +85,8 @@ struct ManifestResponse {
 
 #[derive(Debug, Deserialize)]
 struct SyncResponse {
+    #[serde(default)]
+    uuid: String,
     version: u64,
     hash: String,
     #[serde(default)]
@@ -197,12 +208,23 @@ fn reconcile(
     manifest: &[ManifestEntry],
     full_local_walk: bool,
 ) {
+    // Snapshot uuid -> relpath before this pass mutates state.files, so a
+    // rename detected partway through the loop below is judged against
+    // where things stood at the start, not against edits made moments ago
+    // in this same pass.
+    let known_by_uuid: HashMap<String, String> = state
+        .files
+        .iter()
+        .filter(|(_, f)| !f.uuid.is_empty())
+        .map(|(relpath, f)| (f.uuid.clone(), relpath.clone()))
+        .collect();
+
     for entry in manifest {
         if !config.sync_subdirs && entry.relpath.contains('/') {
             continue;
         }
         let full_path = root.join(&entry.relpath);
-        let local_exists = full_path.exists();
+        let mut local_exists = full_path.exists();
 
         if entry.deleted {
             if let Some(known) = state.files.get(&entry.relpath) {
@@ -220,6 +242,42 @@ fn reconcile(
             continue;
         }
 
+        // This relpath is new to us, but its uuid matches a relpath we do
+        // know - another device renamed it. Move the local file instead of
+        // falling through to "download a brand new copy" below (which would
+        // leave the old one behind and lose nothing but still look like a
+        // duplicate rather than a rename).
+        if !state.files.contains_key(&entry.relpath) && !entry.uuid.is_empty() {
+            if let Some(old_relpath) = known_by_uuid.get(&entry.uuid) {
+                if old_relpath != &entry.relpath && !local_exists {
+                    if let Some(old_synced) = state.files.get(old_relpath).cloned() {
+                        let old_full_path = root.join(old_relpath);
+                        if old_full_path.exists() {
+                            if let Some(parent) = full_path.parent() {
+                                fs::create_dir_all(parent).ok();
+                            }
+                            if fs::rename(&old_full_path, &full_path).is_ok() {
+                                state.files.remove(old_relpath);
+                                state.files.insert(
+                                    entry.relpath.clone(),
+                                    SyncedFile {
+                                        hash: old_synced.hash,
+                                        version: old_synced.version,
+                                        uuid: old_synced.uuid,
+                                    },
+                                );
+                                local_exists = true;
+                                // Falls through to the match below, which
+                                // will notice if entry.version is actually
+                                // newer (content also changed elsewhere)
+                                // and download the update on top.
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         match state.files.get(&entry.relpath).cloned() {
             None => {
                 if local_exists {
@@ -227,13 +285,13 @@ fn reconcile(
                     // server also knows about (fresh install, or a stray
                     // file). Upload wins per LWW - the prior server content
                     // is preserved in version history either way.
-                    if let Some((version, hash)) = upload_file_with_pdf_fallback(config, root, &entry.relpath) {
-                        state.files.insert(entry.relpath.clone(), SyncedFile { hash, version });
+                    if let Some((version, hash, uuid)) = upload_file_with_pdf_fallback(config, root, &entry.relpath) {
+                        state.files.insert(entry.relpath.clone(), SyncedFile { hash, version, uuid });
                     }
                 } else if let Some(hash) = download_file(config, root, &entry.relpath, None) {
                     state.files.insert(
                         entry.relpath.clone(),
-                        SyncedFile { hash, version: entry.version },
+                        SyncedFile { hash, version: entry.version, uuid: entry.uuid.clone() },
                     );
                 }
             }
@@ -252,15 +310,24 @@ fn reconcile(
                             if let Some(new_hash) = download_file(config, root, &entry.relpath, None) {
                                 state.files.insert(
                                     entry.relpath.clone(),
-                                    SyncedFile { hash: new_hash, version: entry.version },
+                                    SyncedFile { hash: new_hash, version: entry.version, uuid: entry.uuid.clone() },
                                 );
                             }
+                        } else if known.uuid.is_empty() && !entry.uuid.is_empty() {
+                            // Backfill the uuid on an already-synced entry
+                            // written before this field existed, so a future
+                            // rename of this file is detected immediately
+                            // rather than after its next content change.
+                            state.files.insert(
+                                entry.relpath.clone(),
+                                SyncedFile { hash: known.hash, version: known.version, uuid: entry.uuid.clone() },
+                            );
                         }
                     }
                     Some(_) => {
                         // Edited locally since last sync - upload, it wins.
-                        if let Some((version, hash)) = upload_file_with_pdf_fallback(config, root, &entry.relpath) {
-                            state.files.insert(entry.relpath.clone(), SyncedFile { hash, version });
+                        if let Some((version, hash, uuid)) = upload_file_with_pdf_fallback(config, root, &entry.relpath) {
+                            state.files.insert(entry.relpath.clone(), SyncedFile { hash, version, uuid });
                         }
                     }
                     None => {}
@@ -277,8 +344,8 @@ fn reconcile(
             }
         });
         for relpath in to_upload {
-            if let Some((version, hash)) = upload_file_with_pdf_fallback(config, root, &relpath) {
-                state.files.insert(relpath, SyncedFile { hash, version });
+            if let Some((version, hash, uuid)) = upload_file_with_pdf_fallback(config, root, &relpath) {
+                state.files.insert(relpath, SyncedFile { hash, version, uuid });
             }
         }
     }
@@ -314,8 +381,8 @@ fn handle_local_touched(config: &AppConfig, root: &Path, state: &mut SyncState, 
         }
     }
 
-    if let Some((version, hash)) = upload_file_with_pdf_fallback(config, root, &relpath) {
-        state.files.insert(relpath, SyncedFile { hash, version });
+    if let Some((version, hash, uuid)) = upload_file_with_pdf_fallback(config, root, &relpath) {
+        state.files.insert(relpath, SyncedFile { hash, version, uuid });
     }
 }
 
@@ -440,18 +507,18 @@ fn fetch_manifest(config: &AppConfig) -> Option<Vec<ManifestEntry>> {
 /// its own PDF (e.g. rnote-cli isn't installed on that deployment) - tries
 /// to render one locally and upload it as a fallback. Best-effort: a
 /// missing/failing local rnote-cli just means no PDF, same as today.
-fn upload_file_with_pdf_fallback(config: &AppConfig, root: &Path, relpath: &str) -> Option<(u64, String)> {
-    let (version, hash, has_pdf) = upload_file(config, root, relpath)?;
+fn upload_file_with_pdf_fallback(config: &AppConfig, root: &Path, relpath: &str) -> Option<(u64, String, String)> {
+    let (version, hash, has_pdf, uuid) = upload_file(config, root, relpath)?;
     if !has_pdf {
         if let Some(pdf_path) = try_local_pdf(root, relpath) {
             upload_pdf(config, relpath, version, &pdf_path);
             fs::remove_file(&pdf_path).ok();
         }
     }
-    Some((version, hash))
+    Some((version, hash, uuid))
 }
 
-fn upload_file(config: &AppConfig, root: &Path, relpath: &str) -> Option<(u64, String, bool)> {
+fn upload_file(config: &AppConfig, root: &Path, relpath: &str) -> Option<(u64, String, bool, String)> {
     let bytes = fs::read(root.join(relpath)).ok()?;
     let url = format!("{}/api/notes/sync", config.server_url.trim_end_matches('/'));
     let form = reqwest::blocking::multipart::Form::new()
@@ -471,7 +538,7 @@ fn upload_file(config: &AppConfig, root: &Path, relpath: &str) -> Option<(u64, S
         return None;
     }
     let data: SyncResponse = resp.json().ok()?;
-    Some((data.version, data.hash, data.has_pdf))
+    Some((data.version, data.hash, data.has_pdf, data.uuid))
 }
 
 /// Renders relpath to a PDF using a local rnote-cli, if one happens to be

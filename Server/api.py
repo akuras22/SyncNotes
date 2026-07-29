@@ -298,6 +298,7 @@ def notes_manifest():
     return jsonify({
         'files': [
             {
+                'uuid': n.uuid,
                 'relpath': n.relpath,
                 'version': n.current_version.version_number if n.current_version else 0,
                 'hash': n.current_version.content_hash if n.current_version else None,
@@ -339,6 +340,7 @@ def sync_note():
     ):
         os.remove(tmp_path)
         return jsonify({
+            'uuid': existing.uuid,
             'relpath': existing.relpath,
             'version': existing.current_version.version_number,
             'hash': content_hash,
@@ -398,6 +400,7 @@ def sync_note():
         db.session.commit()
 
     return jsonify({
+        'uuid': note.uuid,
         'relpath': note.relpath,
         'version': version.version_number,
         'hash': content_hash,
@@ -439,6 +442,7 @@ def rename_note_sync():
 
     if from_relpath == to_relpath:
         return jsonify({
+            'uuid': note.uuid,
             'relpath': note.relpath,
             'version': note.current_version.version_number if note.current_version else 0,
             'hash': note.current_version.content_hash if note.current_version else None,
@@ -455,6 +459,7 @@ def rename_note_sync():
     db.session.commit()
 
     return jsonify({
+        'uuid': note.uuid,
         'relpath': note.relpath,
         'version': note.current_version.version_number if note.current_version else 0,
         'hash': note.current_version.content_hash if note.current_version else None,
