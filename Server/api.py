@@ -571,14 +571,13 @@ def view_pdf(note_id):
     )
 
 
-@api_bp.route('/notes/<int:note_id>', methods=['DELETE', 'POST'])
+@api_bp.route('/notes/<int:note_id>', methods=['DELETE'])
 @require_auth
 def delete_note(note_id):
-    """Used by the website's Delete button (a plain HTML <form> can only
-    submit GET/POST, so POST is accepted here too) as well as any client
-    that sends a real DELETE. Soft-deletes so the removal also propagates
-    to any device that has this note synced, same as a delete initiated
-    from the sync client."""
+    """JSON API for programmatic clients. The website's own Delete button
+    posts to web.delete_note instead (a plain HTML <form> can't send a real
+    DELETE, and that route redirects back into the dashboard afterwards
+    rather than leaving the browser on this raw JSON response)."""
     note = NoteFile.query.filter_by(
         id=note_id, user_id=current_user.id
     ).first_or_404()

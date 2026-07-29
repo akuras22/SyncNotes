@@ -4,7 +4,7 @@ from functools import wraps
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
-from api import get_client_ip, parse_user_agent, resolve_geo
+from api import _soft_delete, get_client_ip, parse_user_agent, resolve_geo
 from models import ApiToken, DeviceCode, NoteFile, NoteVersion, User, db
 
 web_bp = Blueprint('web', __name__)
@@ -97,6 +97,20 @@ def view_note(note_id):
         abort(404)
 
     return render_template('note_view.html', note=note, version=version)
+
+
+@web_bp.route('/notes/<int:note_id>/delete', methods=['POST'])
+@login_required
+def delete_note(note_id):
+    """The website's Delete button posts here (not the JSON api_bp route),
+    so the browser gets redirected back into the dashboard afterwards
+    instead of landing on a raw JSON response."""
+    note = NoteFile.query.filter_by(
+        id=note_id, user_id=current_user.id
+    ).first_or_404()
+    _soft_delete(note)
+    flash(f'{note.name} deleted', 'success')
+    return redirect(url_for('web.dashboard', path=request.form.get('path', '')))
 
 
 @web_bp.route('/login', methods=['GET', 'POST'])
