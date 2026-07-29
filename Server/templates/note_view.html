@@ -46,12 +46,26 @@
   const container = document.getElementById('pdf-pages');
   const pageLabel = document.getElementById('pdf-page-label');
   const zoomLabel = document.getElementById('pdf-zoom-label');
-  const BASE_SCALE = 1.2;
+  // Replaced by the page's actual fit-to-width scale once the PDF loads -
+  // this fallback only matters if that computation can't run for some
+  // reason. Zoom % is always shown relative to BASE_SCALE, i.e. "100%"
+  // means "the page fills the viewer's width", not some fixed PDF scale.
+  let BASE_SCALE = 1.2;
   let scale = BASE_SCALE;
   let pdfDoc = null;
   let rendering = false;
 
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  async function computeFitScale() {
+    const page = await pdfDoc.getPage(1);
+    const nativeWidth = page.getViewport({ scale: 1 }).width;
+    const available = container.clientWidth;
+    if (available > 0 && nativeWidth > 0) {
+      return available / nativeWidth;
+    }
+    return BASE_SCALE;
+  }
 
   async function renderAll() {
     if (!pdfDoc || rendering) return;
@@ -81,8 +95,12 @@
     rendering = false;
   }
 
+  function clampScale(next) {
+    return Math.min(Math.max(next, 0.2), 8);
+  }
+
   function setZoom(next) {
-    scale = Math.min(Math.max(next, 0.5), 4);
+    scale = clampScale(next);
     zoomLabel.textContent = Math.round((scale / BASE_SCALE) * 100) + '%';
     renderAll();
   }
@@ -96,6 +114,11 @@
     .then((doc) => {
       pdfDoc = doc;
       pageLabel.textContent = doc.numPages + (doc.numPages === 1 ? ' page' : ' pages');
+      return computeFitScale();
+    })
+    .then((fitScale) => {
+      BASE_SCALE = fitScale;
+      scale = fitScale;
       return renderAll();
     })
     .catch((err) => {
@@ -103,8 +126,23 @@
       console.error(err);
     });
 
-  document.getElementById('pdf-zoom-in').addEventListener('click', () => setZoom(scale + 0.2));
-  document.getElementById('pdf-zoom-out').addEventListener('click', () => setZoom(scale - 0.2));
+  document.getElementById('pdf-zoom-in').addEventListener('click', () => setZoom(scale + BASE_SCALE * 0.15));
+  document.getElementById('pdf-zoom-out').addEventListener('click', () => setZoom(scale - BASE_SCALE * 0.15));
+
+  // Ctrl+scroll (and trackpad pinch, which browsers report as a wheel
+  // event with ctrlKey set) zooms the viewer instead of the whole page.
+  // The listener has to be non-passive so preventDefault() actually stops
+  // the browser's native page zoom.
+  let wheelZoomTimer = null;
+  container.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -1 : 1;
+    scale = clampScale(scale + delta * BASE_SCALE * 0.1);
+    zoomLabel.textContent = Math.round((scale / BASE_SCALE) * 100) + '%';
+    clearTimeout(wheelZoomTimer);
+    wheelZoomTimer = setTimeout(renderAll, 80);
+  }, { passive: false });
 
   // Grab-to-pan with the left mouse button or a single touch, unified via
   // Pointer Events. touch-action:none on .pdf-pages (see style.css) hands
