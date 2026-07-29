@@ -77,10 +77,15 @@ fn load_icon() -> Option<Icon> {
     let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
     let rgba = img.to_rgba8();
     let (w, h) = rgba.dimensions();
-    let dim = w.min(h);
-    let x = (w - dim) / 2;
-    let y = (h - dim) / 2;
-    let cropped = rgba.view(x, y, dim, dim).to_image();
-    let resized = image::imageops::resize(&cropped, 64, 64, image::imageops::FilterType::Lanczos3);
-    Icon::from_rgba(resized.into_raw(), 64, 64).ok()
+    let scale = (64.0 / w as f32).min(64.0 / h as f32);
+    let scaled_w = (w as f32 * scale).round().max(1.0) as u32;
+    let scaled_h = (h as f32 * scale).round().max(1.0) as u32;
+    let resized = image::imageops::resize(&rgba, scaled_w, scaled_h, image::imageops::FilterType::Lanczos3);
+
+    let mut canvas = image::RgbaImage::from_pixel(64, 64, image::Rgba([0, 0, 0, 0]));
+    let offset_x = (64 - scaled_w) / 2;
+    let offset_y = (64 - scaled_h) / 2;
+    image::imageops::overlay(&mut canvas, &resized, offset_x.into(), offset_y.into());
+
+    Icon::from_rgba(canvas.into_raw(), 64, 64).ok()
 }
