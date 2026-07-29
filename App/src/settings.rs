@@ -25,7 +25,7 @@ impl SettingsWindow {
 
     fn load_logo(&mut self, ui: &egui::Ui) -> Option<&egui::TextureHandle> {
         if self.logo.is_none() {
-            let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
+            let img = image::load_from_memory(include_bytes!("../../syncnotes-icon.png")).ok()?;
             let rgba = img.to_rgba8();
             let (w, h) = rgba.dimensions();
             let color_image = egui::ColorImage::from_rgba_unmultiplied([w as _, h as _], rgba.as_raw());
@@ -57,7 +57,7 @@ impl eframe::App for SettingsWindow {
                 ui.add_space(ui.available_height() * 0.08);
 
                 if let Some(logo) = self.load_logo(ui) {
-                    ui.add(egui::Image::new(logo).max_width(64.0));
+                    ui.add(egui::Image::new(logo).max_width(80.0));
                     ui.add_space(8.0);
                 }
                 ui.heading(egui::RichText::new("SyncNotes Settings").size(24.0).strong());

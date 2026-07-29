@@ -54,7 +54,7 @@ impl SetupWizard {
 
     fn load_logo(&mut self, ui: &egui::Ui) -> Option<&egui::TextureHandle> {
         if self.logo.is_none() {
-            let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
+            let img = image::load_from_memory(include_bytes!("../../syncnotes-icon.png")).ok()?;
             let rgba = img.to_rgba8();
             let (w, h) = rgba.dimensions();
             let color_image = egui::ColorImage::from_rgba_unmultiplied([w as _, h as _], rgba.as_raw());
@@ -117,7 +117,7 @@ impl eframe::App for SetupWizard {
                 ui.add_space(ui.available_height() * 0.1);
 
                 if let Some(logo) = self.load_logo(ui) {
-                    ui.add(egui::Image::new(logo).max_width(96.0));
+                    ui.add(egui::Image::new(logo).max_width(112.0));
                     ui.add_space(8.0);
                 }
 
