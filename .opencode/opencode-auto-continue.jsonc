@@ -1,7 +1,0 @@
-{
-  "enabled": true,
-  "throttleMs": 5000,
-  "delayMs": 500,
-  "maxConsecutive": 50,
-  "updateThrottleMs": 30000
-}
