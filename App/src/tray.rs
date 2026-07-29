@@ -12,9 +12,10 @@ pub fn start_tray() {
         Ok(i) => i.resize_exact(32, 32, image::imageops::FilterType::Lanczos3),
         Err(_) => return,
     };
-    let rgba = img.to_rgba8();
-    let (w, h) = rgba.dimensions();
-    let icon = match tray_icon::Icon::from_rgba(&rgba, w, h) {
+    let rgba_img = img.to_rgba8();
+    let (w, h) = rgba_img.dimensions();
+    let rgba: Vec<u8> = rgba_img.as_raw().clone();
+    let icon = match tray_icon::icon::Icon::from_rgba(rgba, w, h) {
         Ok(i) => i,
         Err(_) => return,
     };
@@ -23,8 +24,8 @@ pub fn start_tray() {
     let mut menu = Menu::new();
     let show = MenuItem::new("Open Settings", true, None);
     let quit = MenuItem::new("Quit", true, None);
-    menu.append(&show).ok();
-    menu.append(&quit).ok();
+    menu.append(&show);
+    menu.append(&quit);
 
     let tray = match tray_icon::TrayIconBuilder::new()
         .with_tooltip("SyncNotes")
@@ -42,7 +43,7 @@ pub fn start_tray() {
     let quit_id = quit.id();
 
     std::thread::spawn(move || {
-        let event_rx = tray_icon::TrayIconEvent::receiver();
+        let event_rx = tray_icon::TrayEvent::receiver();
         while let Ok(_event) = event_rx.recv() {
             let _ = std::process::Command::new(
                 std::env::current_exe().unwrap_or_default(),
