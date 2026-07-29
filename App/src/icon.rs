@@ -1,3 +1,5 @@
+use image::GenericImageView;
+
 pub fn load_logo_rgba(size: u32) -> Option<(Vec<u8>, u32, u32)> {
     let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
     let rgba = img.to_rgba8();
