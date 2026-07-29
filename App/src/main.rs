@@ -25,7 +25,7 @@ fn main() {
 fn run_setup() {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([540.0, 480.0])
+            .with_inner_size([480.0, 560.0])
             .with_resizable(false)
             .with_title("SyncNotes Setup"),
         ..Default::default()

@@ -120,6 +120,32 @@ def authorize_device():
     )
 
 
+@web_bp.route('/oauth/authorize', methods=['GET', 'POST'])
+@login_required
+def oauth_authorize():
+    device_code_str = request.args.get('device_code', '') or request.form.get('device_code', '')
+    code = None
+
+    if device_code_str:
+        code = DeviceCode.query.filter_by(
+            device_code=device_code_str, is_authorized=False
+        ).first()
+        if code and code.is_expired():
+            flash('Authorization request has expired.', 'error')
+            code = None
+
+    if request.method == 'POST':
+        if code:
+            code.user_id = current_user.id
+            code.is_authorized = True
+            db.session.commit()
+            return render_template('oauth_authorize.html', authorized=True)
+        flash('Invalid or expired request.', 'error')
+        return redirect(url_for('web.oauth_authorize'))
+
+    return render_template('oauth_authorize.html', authorized=False, code=code)
+
+
 @web_bp.route('/download')
 def download():
     return render_template('download.html')

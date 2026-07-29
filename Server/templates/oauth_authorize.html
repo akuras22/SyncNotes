@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Authorize App — SyncNotes{% endblock %}
+{% block content %}
+<div class="window" style="max-width:480px;">
+  <div class="window-header">
+    <h1 class="window-title">Authorize App</h1>
+  </div>
+  <div class="window-body text-center">
+    {% if authorized %}
+      <div style="font-size:48px;margin:24px 0;">&#10003;</div>
+      <h2 style="margin:0 0 8px;">Device Authorized</h2>
+      <p class="text-muted" style="margin:0 0 24px;">
+        You can close this window and return to the app.
+      </p>
+    {% elif code %}
+      <div style="margin:24px 0;">
+        <div style="font-size:40px;margin-bottom:16px;">&#128274;</div>
+        <h2 style="margin:0 0 8px;">Allow this app?</h2>
+        <p class="text-muted" style="margin:0 0 4px;">
+          <strong>{{ code.client_name or 'SyncNotes Desktop' }}</strong> wants to connect to your account.
+        </p>
+        <p class="text-muted" style="margin:0 0 24px;font-size:13px;">
+          This will grant access to sync your notes.
+        </p>
+        <form method="POST">
+          <input type="hidden" name="device_code" value="{{ code.device_code }}">
+          <button class="btn btn-primary" type="submit" style="width:100%;padding:12px;font-size:16px;">Allow</button>
+        </form>
+        <div style="margin-top:12px;">
+          <a class="btn btn-flat" href="{{ url_for('web.dashboard') }}" style="color:var(--text-secondary);">Deny</a>
+        </div>
+      </div>
+    {% else %}
+      <div style="margin:24px 0;">
+        <p class="text-muted" style="margin:0;">No authorization request found.</p>
+        <a class="btn btn-primary" href="{{ url_for('web.dashboard') }}" style="margin-top:16px;">Go to Dashboard</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

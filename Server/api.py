@@ -74,7 +74,7 @@ def request_device_code():
     return jsonify({
         'device_code': code.device_code,
         'user_code': code.user_code,
-        'verification_uri': request.host_url.rstrip('/') + '/authorize-device',
+        'verification_uri': request.host_url.rstrip('/') + f'/oauth/authorize?device_code={code.device_code}',
         'interval': 5,
         'expires_in': current_app.config['DEVICE_CODE_EXPIRY'],
     })

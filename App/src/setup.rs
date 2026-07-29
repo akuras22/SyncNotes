@@ -114,8 +114,7 @@ impl eframe::App for SetupWizard {
                         {
                             match request_device_code(&self.server_url) {
                                 Ok(info) => {
-                                    let url = format!("{}?code={}", info.verification_uri, info.user_code);
-                                    self.open_browser(&url);
+                                    self.open_browser(&info.verification_uri);
                                     self.code_info = Some(info.clone());
                                     self.start_polling(info);
                                     self.step = SetupStep::LoginPoll;
@@ -125,7 +124,7 @@ impl eframe::App for SetupWizard {
                         }
 
                         ui.add_space(16.0);
-                        if ui.link("Or use Device Code manually").clicked() {
+                        if ui.add(egui::Button::new("Login with Device Code").min_size(egui::vec2(200.0, 30.0))).clicked() {
                             self.step = SetupStep::DeviceCode;
                         }
                     }
