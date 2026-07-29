@@ -11,9 +11,9 @@ header(){ echo -e "\n  ${CYAN}── $* ──${NC}"; }
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-cleanup() { tput rmcup 2>/dev/null || true; }
+cleanup() { echo -ne "\033[?1049l"; }
 trap cleanup INT TERM EXIT
-tput smcup 2>/dev/null || true
+echo -ne "\033[?1049h\033[H"
 
 select_option() {
     local prompt="$1" opt1="$2" opt2="$3"
