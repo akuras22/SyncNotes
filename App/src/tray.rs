@@ -59,6 +59,6 @@ pub fn create_tray() {
 }
 
 fn make_tray_icon() -> Option<Icon> {
-    let (rgba, w, h) = load_logo_rgba(96)?;
+    let (rgba, w, h) = load_logo_rgba(128)?;
     Icon::from_rgba(rgba, w, h).ok()
 }

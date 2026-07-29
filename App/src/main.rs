@@ -11,7 +11,7 @@ use eframe::egui;
 use icon::load_logo_rgba;
 
 fn load_icon() -> Option<egui::IconData> {
-    let (rgba, w, h) = load_logo_rgba(128)?;
+    let (rgba, w, h) = load_logo_rgba(256)?;
     Some(egui::IconData { rgba, width: w, height: h })
 }
 
