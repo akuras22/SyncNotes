@@ -9,9 +9,8 @@ pub fn load_logo_rgba(size: u32) -> Option<(Vec<u8>, u32, u32)> {
     let ox = (dim - w) / 2;
     let oy = (dim - h) / 2;
     for (px, py, pixel) in rgba.enumerate_pixels() {
-        square.put_pixel(ox + px, oy + py, pixel);
+        square.put_pixel(ox + px, oy + py, *pixel);
     }
     let resized = image::imageops::resize(&square, size, size, image::imageops::FilterType::Lanczos3);
-    let out = resized.to_rgba8();
-    Some((out.as_raw().clone(), size, size))
+    Some((resized.as_raw().clone(), size, size))
 }
