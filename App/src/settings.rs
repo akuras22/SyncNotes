@@ -53,8 +53,6 @@ impl eframe::App for SettingsWindow {
         ui.ctx().set_style_of(egui::Theme::Dark, style);
 
         egui::CentralPanel::default().show(ui, |ui| {
-            ui.visuals_mut().window_fill = egui::Color32::from_rgb(0x1e, 0x1e, 0x1e);
-
             ui.vertical_centered(|ui| {
                 ui.add_space(ui.available_height() * 0.08);
 
@@ -66,10 +64,10 @@ impl eframe::App for SettingsWindow {
                 ui.add_space(24.0);
 
                 egui::Frame {
-                    fill: egui::Color32::from_rgb(0x2d, 0x2d, 0x2d),
-                    corner_radius: egui::CornerRadius::same(8),
-                    stroke: egui::Stroke::new(1.0, egui::Color32::from_rgb(0x4a, 0x4a, 0x4a)),
-                    inner_margin: egui::Margin::symmetric(16, 16),
+                    fill: egui::Color32::from_rgb(0x1b, 0x1b, 0x22),
+                    corner_radius: egui::CornerRadius::same(14),
+                    stroke: egui::Stroke::new(1.0, egui::Color32::from_rgb(0x35, 0x35, 0x40)),
+                    inner_margin: egui::Margin::symmetric(18, 18),
                     ..Default::default()
                 }.show(ui, |ui| {
                     ui.set_max_width(440.0);
@@ -119,14 +117,18 @@ impl eframe::App for SettingsWindow {
 
                 ui.horizontal(|ui| {
                     ui.add_space((ui.available_width() - 260.0) / 2.0);
-                    if ui.add(egui::Button::new("Save").min_size(egui::vec2(120.0, 32.0))).clicked() {
+                    if theme::primary_button(ui, "Save", egui::vec2(120.0, 36.0)).clicked() {
                         self.config.server_url = self.server_url_edit.trim().to_string();
                         self.config.rnotes_dir = self.rnotes_dir_edit.trim().to_string();
                         self.config.save();
                         self.message = "Settings saved successfully.".to_string();
                     }
 
-                    if ui.add(egui::Button::new("Disconnect").min_size(egui::vec2(120.0, 32.0))).clicked() {
+                    ui.add_space(4.0);
+
+                    if ui.add(egui::Button::new(
+                        egui::RichText::new("Disconnect").color(theme::DESTRUCTIVE),
+                    ).min_size(egui::vec2(120.0, 36.0))).clicked() {
                         AppConfig::delete();
                         DISCONNECT_REQUESTED.store(true, Ordering::Relaxed);
                         ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
@@ -136,9 +138,9 @@ impl eframe::App for SettingsWindow {
                 if !self.message.is_empty() {
                     ui.add_space(16.0);
                     let color = if self.message.contains("Disconnected") {
-                        egui::Color32::from_rgb(0xe6, 0x61, 0x00)
+                        egui::Color32::from_rgb(0xe6, 0xa2, 0x3c)
                     } else {
-                        egui::Color32::from_rgb(0x2e, 0xc2, 0x7e)
+                        theme::SUCCESS
                     };
                     ui.colored_label(color, &self.message);
                 }

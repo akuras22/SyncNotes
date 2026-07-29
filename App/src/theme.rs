@@ -144,7 +144,7 @@ pub fn primary_button(ui: &mut egui::Ui, text: &str, size: egui::Vec2) -> egui::
     response
 }
 
-fn lerp_color(a: Color32, b: Color32, t: f32) -> Color32 {
+pub fn lerp_color(a: Color32, b: Color32, t: f32) -> Color32 {
     let t = t.clamp(0.0, 1.0);
     Color32::from_rgb(
         (a.r() as f32 + (b.r() as f32 - a.r() as f32) * t) as u8,

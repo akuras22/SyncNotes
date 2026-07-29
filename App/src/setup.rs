@@ -75,6 +75,17 @@ impl SetupWizard {
         std::process::Command::new("open").arg(url).spawn().ok();
     }
 
+    fn step_index(&self) -> u8 {
+        match self.step {
+            SetupStep::Welcome => 0,
+            SetupStep::LoginPoll => 1,
+            SetupStep::DeviceCode => 2,
+            SetupStep::Directory => 3,
+            SetupStep::Autostart => 4,
+            SetupStep::Done => 5,
+        }
+    }
+
     fn start_polling(&mut self, info: DeviceCodeInfo) {
         if self.poll_started { return; }
         self.poll_started = true;
@@ -108,8 +119,6 @@ impl eframe::App for SetupWizard {
         ui.ctx().set_style_of(egui::Theme::Dark, style);
 
         egui::CentralPanel::default().show(ui, |ui| {
-            ui.visuals_mut().window_fill = egui::Color32::from_rgb(0x1e, 0x1e, 0x1e);
-
             ui.vertical_centered(|ui| {
                 ui.add_space(ui.available_height() * 0.1);
 
@@ -117,6 +126,11 @@ impl eframe::App for SetupWizard {
                     ui.add(egui::Image::new(logo).max_width(112.0));
                     ui.add_space(8.0);
                 }
+
+                let fade = ui
+                    .ctx()
+                    .animate_bool_responsive(egui::Id::new("setup_step_fade").with(self.step_index()), true);
+                ui.multiply_opacity(fade);
 
                 match self.step {
                     SetupStep::Welcome => {
@@ -134,10 +148,7 @@ impl eframe::App for SetupWizard {
 
                         ui.add_space(32.0);
 
-                        if ui.add(egui::Button::new(egui::RichText::new("Login with Browser").size(18.0))
-                            .min_size(egui::vec2(280.0, 48.0)))
-                            .clicked() 
-                        {
+                        if theme::primary_button(ui, "Login with Browser", egui::vec2(280.0, 48.0)).clicked() {
                             match request_device_code(&self.server_url) {
                                 Ok(info) => {
                                     self.open_browser(&info.verification_uri);
@@ -205,8 +216,9 @@ impl eframe::App for SetupWizard {
                             ui.add_space(16.0);
 
                             egui::Frame {
-                                fill: egui::Color32::from_rgb(0x2a, 0x2a, 0x2a),
-                                corner_radius: egui::CornerRadius::same(8),
+                                fill: egui::Color32::from_rgb(0x22, 0x22, 0x2a),
+                                stroke: egui::Stroke::new(1.0, egui::Color32::from_rgb(0x35, 0x35, 0x40)),
+                                corner_radius: egui::CornerRadius::same(14),
                                 inner_margin: egui::Margin::symmetric(24, 24),
                                 ..Default::default()
                             }.show(ui, |ui| {
@@ -258,7 +270,7 @@ impl eframe::App for SetupWizard {
                         });
 
                         ui.add_space(32.0);
-                        if ui.add(egui::Button::new("Continue").min_size(egui::vec2(200.0, 40.0))).clicked() {
+                        if theme::primary_button(ui, "Continue", egui::vec2(200.0, 44.0)).clicked() {
                             self.step = SetupStep::Autostart;
                         }
                     }
@@ -274,7 +286,7 @@ impl eframe::App for SetupWizard {
                         ui.checkbox(&mut self.sync_subdirs, "Sync subdirectories");
                         
                         ui.add_space(48.0);
-                        if ui.add(egui::Button::new("Finish Setup").min_size(egui::vec2(200.0, 48.0))).clicked() {
+                        if theme::primary_button(ui, "Finish Setup", egui::vec2(200.0, 48.0)).clicked() {
                             let mut config = AppConfig::load().unwrap_or_default();
                             config.rnotes_dir = self.rnotes_dir_edit.trim().to_string();
                             config.autostart = self.auto_start;
@@ -297,17 +309,19 @@ impl eframe::App for SetupWizard {
                     }
 
                     SetupStep::Done => {
-                        ui.heading("✨ Setup Complete! ✨");
+                        let pulse = (ui.input(|i| i.time) * 2.0).sin() as f32 * 0.5 + 0.5;
+                        ui.colored_label(
+                            theme::lerp_color(theme::SUCCESS, theme::BLUE_LIGHT, pulse * 0.3),
+                            egui::RichText::new("✓ Setup Complete").size(28.0).strong(),
+                        );
                         ui.add_space(24.0);
                         ui.label("SyncNotes will keep your files in sync.");
                         ui.add_space(48.0);
-                        if ui.add(egui::Button::new(egui::RichText::new("Continue").size(18.0))
-                            .min_size(egui::vec2(200.0, 48.0)))
-                            .clicked()
-                        {
+                        if theme::primary_button(ui, "Continue", egui::vec2(200.0, 48.0)).clicked() {
                             SETUP_COMPLETE.store(true, Ordering::Relaxed);
                             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                         }
+                        ui.ctx().request_repaint();
                     }
                 }
                 
@@ -319,7 +333,13 @@ impl eframe::App for SetupWizard {
 
             });
         });
-        
-        ui.ctx().request_repaint();
+
+        // Only keep repainting on a timer while we're actively waiting on the
+        // background auth-polling thread; every other step is fully
+        // event-driven (egui repaints on input / on its own animations),
+        // which keeps the app idle at ~0% CPU while just sitting open.
+        if matches!(self.step, SetupStep::LoginPoll | SetupStep::DeviceCode) {
+            ui.ctx().request_repaint_after(std::time::Duration::from_millis(200));
+        }
     }
 }
