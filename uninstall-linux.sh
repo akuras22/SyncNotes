@@ -13,18 +13,32 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 select_option() {
     local prompt="$1" opt1="$2" opt2="$3"
+    local selected=0
     echo ""
     echo -e "  ${BLUE}${prompt}${NC}"
-    echo "    ${CYAN}1)${NC} $opt1"
-    echo "    ${CYAN}2)${NC} $opt2"
-    echo ""
     while true; do
-        read -rp "  Select [1/2]: " choice
-        case "$choice" in
-            1) return 0 ;;
-            2) return 1 ;;
-            *) warn "Please enter 1 or 2." ;;
-        esac
+        if [ $selected -eq 0 ]; then
+            echo -e "    ${GREEN}▸${NC} $opt1"
+            echo -e "      $opt2"
+        else
+            echo -e "      $opt1"
+            echo -e "    ${GREEN}▸${NC} $opt2"
+        fi
+        IFS= read -rsn 1 key
+        if [[ $key == $'\033' ]]; then
+            read -rsn 2 -t 0.01 key
+            case "$key" in
+                '[A') selected=0 ;;
+                '[B') selected=1 ;;
+            esac
+        elif [[ $key == $'\n' ]] || [[ $key == $'\r' ]]; then
+            echo ""; return $selected
+        elif [[ $key == '1' ]]; then
+            echo ""; return 0
+        elif [[ $key == '2' ]]; then
+            echo ""; return 1
+        fi
+        echo -en "\033[2A\033[J"
     done
 }
 

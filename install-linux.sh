@@ -15,18 +15,32 @@ trap cleanup INT TERM
 
 select_option() {
     local prompt="$1" opt1="$2" opt2="$3"
+    local selected=0
     echo ""
     echo -e "  ${BLUE}${prompt}${NC}"
-    echo "    ${CYAN}1)${NC} $opt1"
-    echo "    ${CYAN}2)${NC} $opt2"
-    echo ""
     while true; do
-        read -rp "  Select [1/2]: " choice
-        case "$choice" in
-            1) return 0 ;;
-            2) return 1 ;;
-            *) warn "Please enter 1 or 2." ;;
-        esac
+        if [ $selected -eq 0 ]; then
+            echo -e "    ${GREEN}▸${NC} $opt1"
+            echo -e "      $opt2"
+        else
+            echo -e "      $opt1"
+            echo -e "    ${GREEN}▸${NC} $opt2"
+        fi
+        IFS= read -rsn 1 key
+        if [[ $key == $'\033' ]]; then
+            read -rsn 2 -t 0.01 key
+            case "$key" in
+                '[A') selected=0 ;;
+                '[B') selected=1 ;;
+            esac
+        elif [[ $key == $'\n' ]] || [[ $key == $'\r' ]]; then
+            echo ""; return $selected
+        elif [[ $key == '1' ]]; then
+            echo ""; return 0
+        elif [[ $key == '2' ]]; then
+            echo ""; return 1
+        fi
+        echo -en "\033[2A\033[J"
     done
 }
 
@@ -169,11 +183,11 @@ install_server() {
     echo ""
     ok "Server is running!"
     echo ""
-    echo "    ${CYAN}URL:${NC}      http://localhost:2394"
-    echo "    ${CYAN}Login:${NC}    $ADMIN_USER / $ADMIN_PASS"
+    echo -e "    ${CYAN}URL:${NC}      http://localhost:2394"
+    echo -e "    ${CYAN}Login:${NC}    $ADMIN_USER / $ADMIN_PASS"
     echo ""
-    echo "    ${YELLOW}stop:${NC}    cd Server && docker compose down"
-    echo "    ${YELLOW}logs:${NC}    cd Server && docker compose logs -f"
+    echo -e "    ${YELLOW}stop:${NC}    cd Server && docker compose down"
+    echo -e "    ${YELLOW}logs:${NC}    cd Server && docker compose logs -f"
     echo ""
 }
 
@@ -270,7 +284,7 @@ EOF
     echo ""
     ok "SyncNotes installed!"
     echo ""
-    echo "    ${CYAN}Run:${NC}  syncnotes"
+    echo -e "    ${CYAN}Run:${NC}  syncnotes"
     echo ""
     echo "    First run will guide you through setup."
     echo "    Default server: https://notes.huebler.tech"
