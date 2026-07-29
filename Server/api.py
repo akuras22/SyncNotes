@@ -38,6 +38,9 @@ def resolve_geo(ip: str) -> str | None:
 
 
 def get_client_ip() -> str:
+    cf_ip = request.headers.get('CF-Connecting-IP', '')
+    if cf_ip and '.' in cf_ip:
+        return cf_ip
     raw = request.headers.get('X-Forwarded-For', request.remote_addr or '')
     ips = [ip.strip() for ip in raw.split(',') if ip.strip()]
     v4 = [ip for ip in ips if '.' in ip]
