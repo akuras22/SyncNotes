@@ -1,5 +1,6 @@
 services:
   syncnotes:
+    image: ghcr.io/akuras22/syncnotes:latest
     build: .
     container_name: syncnotes
     ports:
