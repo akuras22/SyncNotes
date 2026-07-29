@@ -2,7 +2,9 @@ use crate::config::AppConfig;
 use crate::theme;
 use crate::tray;
 use eframe::egui;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+pub static DISCONNECT_REQUESTED: AtomicBool = AtomicBool::new(false);
 
 pub struct SettingsWindow {
     config: AppConfig,
@@ -126,7 +128,8 @@ impl eframe::App for SettingsWindow {
 
                     if ui.add(egui::Button::new("Disconnect").min_size(egui::vec2(120.0, 32.0))).clicked() {
                         AppConfig::delete();
-                        self.message = "Disconnected. Run setup again.".to_string();
+                        DISCONNECT_REQUESTED.store(true, Ordering::Relaxed);
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                 });
 

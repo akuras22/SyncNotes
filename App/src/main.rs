@@ -91,6 +91,15 @@ fn run_settings(mut config: AppConfig) {
         )
         .ok();
 
+        if settings::DISCONNECT_REQUESTED.swap(false, Ordering::Relaxed) {
+            if let Some(handle) = tray_handle {
+                tray::SHOULD_STOP_TRAY.store(true, Ordering::Relaxed);
+                handle.join().ok();
+            }
+            run_setup();
+            return;
+        }
+
         if !tray_alive || tray::SHOULD_QUIT.load(Ordering::Relaxed) {
             break;
         }

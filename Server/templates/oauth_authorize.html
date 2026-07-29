@@ -11,12 +11,52 @@
         <div class="auth-icon auth-icon-success">&#10003;</div>
         <h2 class="auth-title">Device Authorized</h2>
         <p class="auth-copy">You can close this window and return to the app.</p>
-        {% if ua %}
         <div class="auth-meta">
-          <div class="auth-meta-label">Device</div>
-          <div class="auth-meta-value" title="{{ ua }}">{{ ua[:90] }}{% if ua|length > 90 %}...{% endif %}</div>
+          <div class="auth-meta-label">Connected Client</div>
+          <div class="auth-meta-rows">
+            {% if client_name %}
+            <div class="auth-meta-row">
+              <span class="auth-meta-row-label">App</span>
+              <span class="auth-meta-row-value">{{ client_name }}</span>
+            </div>
+            {% endif %}
+            {% if device_info %}
+            <div class="auth-meta-row">
+              <span class="auth-meta-row-label">OS</span>
+              <span class="auth-meta-row-value">{{ device_info.os }}</span>
+            </div>
+            <div class="auth-meta-row">
+              <span class="auth-meta-row-label">Browser</span>
+              <span class="auth-meta-row-value">{{ device_info.browser }}</span>
+            </div>
+            {% endif %}
+            {% if ip %}
+            <div class="auth-meta-row">
+              <span class="auth-meta-row-label">IP Address</span>
+              <span class="auth-meta-row-value">{{ ip }}</span>
+            </div>
+            {% endif %}
+            {% if location %}
+            <div class="auth-meta-row">
+              <span class="auth-meta-row-label">Location</span>
+              <span class="auth-meta-row-value">{{ location }}</span>
+            </div>
+            {% endif %}
+            {% if authorized_at %}
+            <div class="auth-meta-row">
+              <span class="auth-meta-row-label">Authorized</span>
+              <span class="auth-meta-row-value">{{ authorized_at.strftime('%Y-%m-%d %H:%M UTC') }}</span>
+            </div>
+            {% endif %}
+            {% if ua %}
+            <div class="auth-meta-row auth-meta-row-ua" title="{{ ua }}">
+              <span class="auth-meta-row-label">User Agent</span>
+              <span class="auth-meta-row-value auth-meta-row-value-ua">{{ ua }}</span>
+            </div>
+            {% endif %}
+          </div>
         </div>
-        {% endif %}
+        <p class="auth-subcopy">If you don't recognize this device, revoke it from your <a href="{{ url_for('web.authorize_device') }}">authorized apps</a> right away.</p>
       </div>
     {% elif code %}
       <div class="auth-hero">

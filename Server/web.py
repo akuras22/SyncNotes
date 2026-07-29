@@ -4,7 +4,7 @@ from functools import wraps
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
-from api import get_client_ip, resolve_geo
+from api import get_client_ip, parse_user_agent, resolve_geo
 from models import ApiToken, DeviceCode, NoteFile, User, db
 
 web_bp = Blueprint('web', __name__)
@@ -168,13 +168,24 @@ def oauth_authorize():
             ip = get_client_ip()
             ua = (request.headers.get('User-Agent', '') or '')[:512]
             location = resolve_geo(ip) if ip else None
+            client_name = code.client_name
+            authorized_at = datetime.utcnow()
             code.user_id = current_user.id
             code.is_authorized = True
             code.authorized_ip = ip
             code.authorized_user_agent = ua
             code.authorized_location = location
             db.session.commit()
-            return render_template('oauth_authorize.html', authorized=True, ip=ip, location=location, ua=ua)
+            return render_template(
+                'oauth_authorize.html',
+                authorized=True,
+                ip=ip,
+                location=location,
+                ua=ua,
+                client_name=client_name,
+                device_info=parse_user_agent(ua),
+                authorized_at=authorized_at,
+            )
         flash('Invalid or expired request.', 'error')
         return redirect(url_for('web.oauth_authorize'))
 

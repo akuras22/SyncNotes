@@ -37,6 +37,40 @@ def resolve_geo(ip: str) -> str | None:
     return None
 
 
+def parse_user_agent(ua: str) -> dict:
+    ua = ua or ''
+
+    if 'Windows' in ua:
+        os_name = 'Windows'
+    elif 'Mac OS X' in ua or 'Macintosh' in ua:
+        os_name = 'macOS'
+    elif 'Android' in ua:
+        os_name = 'Android'
+    elif 'iPhone' in ua or 'iPad' in ua:
+        os_name = 'iOS'
+    elif 'Linux' in ua:
+        os_name = 'Linux'
+    else:
+        os_name = 'Unknown OS'
+
+    if 'Edg/' in ua:
+        browser = 'Microsoft Edge'
+    elif 'OPR/' in ua or 'Opera' in ua:
+        browser = 'Opera'
+    elif 'Firefox/' in ua:
+        browser = 'Firefox'
+    elif 'Chrome/' in ua and 'Chromium' not in ua:
+        browser = 'Chrome'
+    elif 'Safari/' in ua and 'Chrome' not in ua:
+        browser = 'Safari'
+    elif 'Gecko/' in ua:
+        browser = 'Gecko-based browser'
+    else:
+        browser = 'Unknown browser'
+
+    return {'os': os_name, 'browser': browser}
+
+
 def get_client_ip() -> str:
     for header in ('CF-Connecting-IP', 'X-Real-IP'):
         ip = request.headers.get(header, '')

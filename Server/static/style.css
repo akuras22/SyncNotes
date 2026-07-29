@@ -325,7 +325,7 @@ body {
 
 .auth-meta {
   width: 100%;
-  max-width: 380px;
+  max-width: 460px;
   padding: 12px 14px;
   border-radius: 10px;
   background: var(--bg-alt);
@@ -347,6 +347,51 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.auth-meta-rows {
+  display: grid;
+  gap: 6px;
+}
+
+.auth-meta-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.auth-meta-row-label {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.auth-meta-row-value {
+  color: var(--text);
+  font-weight: 500;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-meta-row-ua {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.auth-meta-row-value-ua {
+  text-align: left;
+  white-space: normal;
+  word-break: break-all;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--text-secondary);
 }
 
 .window-footer {
