@@ -96,6 +96,7 @@ impl SetupWizard {
 
 impl eframe::App for SetupWizard {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        ui.ctx().send_viewport_cmd(egui::ViewportCommand::CenterOnScreen);
         let style = theme::dark_theme();
         ui.ctx().set_style_of(egui::Theme::Dark, style);
 
@@ -168,6 +169,9 @@ impl eframe::App for SetupWizard {
                             config.access_token = status;
                             config.server_url = self.server_url.clone();
                             config.save();
+                            if !config.access_token.is_empty() {
+                                let _ = crate::auth::verify_token(&config.server_url, &config.access_token);
+                            }
                             self.step = SetupStep::Directory;
                         }
 
@@ -219,6 +223,9 @@ impl eframe::App for SetupWizard {
                              config.access_token = status;
                              config.server_url = self.server_url.clone();
                              config.save();
+                             if !config.access_token.is_empty() {
+                                 let _ = crate::auth::verify_token(&config.server_url, &config.access_token);
+                             }
                              self.step = SetupStep::Directory;
                         }
 
@@ -295,7 +302,6 @@ impl eframe::App for SetupWizard {
                     if ui.button("Clear Error").clicked() { self.auth_error = None; }
                 }
 
-                ui.add_space(ui.available_height().max(0.0));
             });
         });
         

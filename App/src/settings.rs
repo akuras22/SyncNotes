@@ -35,6 +35,7 @@ impl SettingsWindow {
 
 impl eframe::App for SettingsWindow {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        ui.ctx().send_viewport_cmd(egui::ViewportCommand::CenterOnScreen);
         let style = theme::dark_theme();
         ui.ctx().set_style_of(egui::Theme::Dark, style);
 
@@ -127,7 +128,6 @@ impl eframe::App for SettingsWindow {
                     ui.colored_label(color, &self.message);
                 }
 
-                ui.add_space(ui.available_height().max(0.0));
             });
         });
     }
