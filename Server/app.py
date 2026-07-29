@@ -28,6 +28,38 @@ def ensure_database():
     conn.close()
 
 
+MIGRATIONS = {
+    'api_token': [
+        'ADD COLUMN last_ip VARCHAR(45) DEFAULT NULL',
+        'ADD COLUMN last_user_agent VARCHAR(512) DEFAULT NULL',
+        'ADD COLUMN last_location VARCHAR(200) DEFAULT NULL',
+    ],
+    'device_code': [
+        'ADD COLUMN authorized_ip VARCHAR(45) DEFAULT NULL',
+        'ADD COLUMN authorized_user_agent VARCHAR(512) DEFAULT NULL',
+        'ADD COLUMN authorized_location VARCHAR(200) DEFAULT NULL',
+    ],
+}
+
+
+def run_migrations():
+    db_type = 'mysql' if 'mysql' in Config.SQLALCHEMY_DATABASE_URI else 'sqlite'
+    for table, stmts in MIGRATIONS.items():
+        for stmt in stmts:
+            try:
+                if db_type == 'sqlite':
+                    db.session.execute(
+                        f'ALTER TABLE {table} {stmt}'
+                    )
+                else:
+                    db.session.execute(
+                        f'ALTER TABLE {table} {stmt}'
+                    )
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+
 def create_app():
     ensure_database()
 
@@ -51,6 +83,7 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        run_migrations()
         if User.query.count() == 0:
             username = os.environ.get('ADMIN_USERNAME', 'admin')
             email = os.environ.get('ADMIN_EMAIL', 'admin@localhost')
