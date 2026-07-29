@@ -129,6 +129,9 @@ impl eframe::App for SettingsWindow {
                     if ui.add(egui::Button::new(
                         egui::RichText::new("Disconnect").color(theme::DESTRUCTIVE),
                     ).min_size(egui::vec2(120.0, 36.0))).clicked() {
+                        // Stop the sync engine immediately so it doesn't keep
+                        // hitting the server with a token we're about to revoke.
+                        crate::sync::STOP_SYNC.store(true, Ordering::Relaxed);
                         // Best-effort: also revoke this device's token server-side so it
                         // disappears from the website's Authorized Apps list. If the
                         // server is unreachable we still disconnect locally either way.

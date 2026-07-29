@@ -5,7 +5,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from api import get_client_ip, parse_user_agent, resolve_geo
-from models import ApiToken, DeviceCode, NoteFile, User, db
+from models import ApiToken, DeviceCode, NoteFile, NoteVersion, User, db
 
 web_bp = Blueprint('web', __name__)
 
@@ -24,12 +24,60 @@ def admin_required(f):
 @web_bp.route('/')
 @login_required
 def dashboard():
-    notes = (
-        NoteFile.query.filter_by(user_id=current_user.id)
-        .order_by(NoteFile.updated_at.desc())
+    path = request.args.get('path', '').strip('/')
+    all_notes = NoteFile.query.filter_by(
+        user_id=current_user.id, is_deleted=False
+    ).all()
+
+    prefix = f'{path}/' if path else ''
+    folder_names = set()
+    files = []
+    for note in all_notes:
+        relpath = note.relpath or ''
+        if not relpath.startswith(prefix):
+            continue
+        remainder = relpath[len(prefix):]
+        if not remainder:
+            continue
+        if '/' in remainder:
+            folder_names.add(remainder.split('/', 1)[0])
+        else:
+            files.append(note)
+
+    files.sort(key=lambda n: n.updated_at, reverse=True)
+
+    breadcrumbs = []
+    if path:
+        parts = path.split('/')
+        for i, part in enumerate(parts):
+            breadcrumbs.append({'name': part, 'path': '/'.join(parts[:i + 1])})
+
+    folders = [
+        {'name': name, 'path': f'{path}/{name}' if path else name}
+        for name in sorted(folder_names)
+    ]
+
+    return render_template(
+        'dashboard.html',
+        notes=files,
+        folders=folders,
+        current_path=path,
+        breadcrumbs=breadcrumbs,
+    )
+
+
+@web_bp.route('/notes/<int:note_id>/versions')
+@login_required
+def note_versions(note_id):
+    note = NoteFile.query.filter_by(
+        id=note_id, user_id=current_user.id
+    ).first_or_404()
+    versions = (
+        NoteVersion.query.filter_by(note_file_id=note.id)
+        .order_by(NoteVersion.version_number.desc())
         .all()
     )
-    return render_template('dashboard.html', notes=notes)
+    return render_template('note_versions.html', note=note, versions=versions)
 
 
 @web_bp.route('/login', methods=['GET', 'POST'])

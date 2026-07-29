@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ note.name }} — Version History — SyncNotes{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4" style="gap:12px;flex-wrap:wrap;">
+  <div>
+    <a class="text-sm" href="{{ url_for('web.dashboard') }}">&larr; My Notes</a>
+    <h3 style="font-size:19px;font-weight:800;margin:6px 0 0;letter-spacing:-0.02em;">{{ note.name }}</h3>
+    <p class="text-muted text-sm" style="margin:2px 0 0;">{{ note.relpath }}</p>
+  </div>
+  <span class="badge badge-blue">{{ versions|length }} version{{ '' if versions|length == 1 else 's' }}</span>
+</div>
+
+<div class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Version</th>
+          <th>Size</th>
+          <th>Uploaded</th>
+          <th>Device</th>
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for version in versions %}
+          <tr>
+            <td>
+              v{{ version.version_number }}
+              {% if note.current_version_id == version.id %}
+                <span class="badge badge-green" style="margin-left:6px;">Current</span>
+              {% endif %}
+            </td>
+            <td>{{ (version.file_size / 1024)|round(1) }} KB</td>
+            <td>{{ version.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ version.device_name or 'Web' }}</td>
+            <td style="text-align:right;">
+              <a class="btn btn-sm btn-default" href="{{ url_for('api.download_note', relpath=note.relpath, version=version.version_number) }}">Download</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

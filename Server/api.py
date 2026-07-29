@@ -1,4 +1,6 @@
+import hashlib
 import os
+import uuid
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -7,19 +9,18 @@ from flask import (
     Blueprint,
     abort,
     current_app,
+    g,
     jsonify,
     request,
-    send_file,
     send_from_directory,
 )
 from flask_login import current_user, login_user
+from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 
-from models import ApiToken, DeviceCode, NoteFile, User, db
+from models import ApiToken, DeviceCode, NoteFile, NoteVersion, User, db
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
-
-ALLOWED_EXTENSIONS = {'rnote', 'pdf'}
 
 
 def resolve_geo(ip: str) -> str | None:
@@ -102,6 +103,7 @@ def require_auth(f):
                         token.last_location = location
                 db.session.commit()
                 login_user(token.user)
+                g.api_token = token
                 return f(*args, **kwargs)
             return jsonify({'error': 'invalid_token'}), 401
         if current_user.is_authenticated:
@@ -116,11 +118,24 @@ def user_upload_dir():
     )
 
 
-def allowed_file(filename):
-    return (
-        '.' in filename
-        and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-    )
+def normalize_relpath(relpath):
+    if not relpath:
+        return None
+    relpath = relpath.replace('\\', '/').strip('/')
+    if not relpath:
+        return None
+    parts = relpath.split('/')
+    if any(p in ('', '.', '..') for p in parts):
+        return None
+    return relpath
+
+
+def hash_file(path):
+    sha256 = hashlib.sha256()
+    with open(path, 'rb') as f:
+        for chunk in iter(lambda: f.read(65536), b''):
+            sha256.update(chunk)
+    return sha256.hexdigest()
 
 
 # ─── Device Code Auth ───────────────────────────────────────────────────
@@ -244,163 +259,153 @@ def revoke_own_token():
     return jsonify({'status': 'deleted'})
 
 
-# ─── Notes API ──────────────────────────────────────────────────────────
+# ─── Notes Sync API ─────────────────────────────────────────────────────
 
 
-@api_bp.route('/notes', methods=['GET'])
+def _soft_delete(note):
+    if not note.is_deleted:
+        note.is_deleted = True
+        note.updated_at = datetime.utcnow()
+        db.session.commit()
+
+
+@api_bp.route('/notes/manifest', methods=['GET'])
 @require_auth
-def list_notes():
-    notes = (
-        NoteFile.query.filter_by(user_id=current_user.id)
-        .order_by(NoteFile.updated_at.desc())
-        .all()
-    )
-    return jsonify([
-        {
-            'id': n.id,
-            'uuid': n.uuid,
-            'name': n.name,
-            'file_size': n.file_size,
-            'has_original': n.original_filename is not None,
-            'has_pdf': n.pdf_filename is not None,
-            'created_at': n.created_at.isoformat(),
-            'updated_at': n.updated_at.isoformat(),
-            'download_url': url_for(
-                'api.download_original', note_id=n.id, _external=True
-            ),
-            'pdf_url': url_for(
-                'api.view_pdf', note_id=n.id, _external=True
-            ) if n.pdf_filename else None,
-        }
-        for n in notes
-    ])
-
-
-@api_bp.route('/notes/<int:note_id>', methods=['GET'])
-@require_auth
-def get_note(note_id):
-    note = NoteFile.query.filter_by(
-        id=note_id, user_id=current_user.id
-    ).first_or_404()
+def notes_manifest():
+    notes = NoteFile.query.filter_by(user_id=current_user.id).all()
     return jsonify({
-        'id': note.id,
-        'uuid': note.uuid,
-        'name': note.name,
-        'file_size': note.file_size,
-        'has_original': note.original_filename is not None,
-        'has_pdf': note.pdf_filename is not None,
-        'created_at': note.created_at.isoformat(),
-        'updated_at': note.updated_at.isoformat(),
-        'download_url': url_for(
-            'api.download_original', note_id=note.id, _external=True
-        ),
-        'pdf_url': url_for(
-            'api.view_pdf', note_id=note.id, _external=True
-        ) if note.pdf_filename else None,
+        'files': [
+            {
+                'relpath': n.relpath,
+                'version': n.current_version.version_number if n.current_version else 0,
+                'hash': n.current_version.content_hash if n.current_version else None,
+                'size': n.file_size,
+                'updated_at': n.updated_at.isoformat(),
+                'deleted': n.is_deleted,
+            }
+            for n in notes
+        ]
     })
 
 
-@api_bp.route('/notes', methods=['POST'])
+@api_bp.route('/notes/sync', methods=['POST'])
 @require_auth
-def upload_note():
-    name = request.form.get('name', '').strip()
-    original = request.files.get('original')
-    pdf = request.files.get('pdf')
+def sync_note():
+    relpath = normalize_relpath(request.form.get('relpath', ''))
+    if not relpath or not relpath.lower().endswith('.rnote'):
+        return jsonify({'error': 'invalid relpath'}), 400
 
-    if not original and not pdf:
-        return jsonify({'error': 'at least one file required'}), 400
-    if not name:
-        name = (original or pdf).filename or 'Untitled'
-
-    note = NoteFile(
-        name=name, user_id=current_user.id, file_size=0
-    )
-    db.session.add(note)
-    db.session.flush()
+    uploaded = request.files.get('file')
+    if not uploaded:
+        return jsonify({'error': 'file is required'}), 400
 
     upload_dir = user_upload_dir()
     os.makedirs(upload_dir, exist_ok=True)
 
-    size = 0
-    if original and allowed_file(original.filename):
-        ext = 'rnote'
-        orig_name = f'{note.uuid}.{ext}'
-        original.save(os.path.join(upload_dir, orig_name))
-        note.original_filename = orig_name
-        size += os.path.getsize(os.path.join(upload_dir, orig_name))
+    tmp_path = os.path.join(upload_dir, f'{uuid.uuid4()}.tmp')
+    uploaded.save(tmp_path)
+    file_size = os.path.getsize(tmp_path)
+    content_hash = hash_file(tmp_path)
 
-    if pdf and allowed_file(pdf.filename):
-        pdf_name = f'{note.uuid}.pdf'
-        pdf.save(os.path.join(upload_dir, pdf_name))
-        note.pdf_filename = pdf_name
-        size += os.path.getsize(os.path.join(upload_dir, pdf_name))
+    existing = NoteFile.query.filter_by(user_id=current_user.id, relpath=relpath).first()
+    if (
+        existing
+        and not existing.is_deleted
+        and existing.current_version
+        and existing.current_version.content_hash == content_hash
+    ):
+        os.remove(tmp_path)
+        return jsonify({
+            'relpath': existing.relpath,
+            'version': existing.current_version.version_number,
+            'hash': content_hash,
+        })
 
-    note.file_size = size
-    db.session.commit()
+    storage_filename = f'{uuid.uuid4()}.rnote'
+    os.replace(tmp_path, os.path.join(upload_dir, storage_filename))
 
-    return jsonify({'id': note.id, 'uuid': note.uuid, 'name': note.name}), 201
+    token = getattr(g, 'api_token', None)
+    device_name = token.name if token else None
+    display_name = os.path.splitext(os.path.basename(relpath))[0]
+
+    version = None
+    note = None
+    for attempt in range(3):
+        note = NoteFile.query.filter_by(user_id=current_user.id, relpath=relpath).first()
+        if note is None:
+            note = NoteFile(user_id=current_user.id, relpath=relpath, name=display_name, file_size=0)
+            db.session.add(note)
+        else:
+            note.is_deleted = False
+            note.name = display_name
+
+        try:
+            db.session.flush()
+            max_version = (
+                db.session.query(db.func.max(NoteVersion.version_number))
+                .filter_by(note_file_id=note.id)
+                .scalar()
+            ) or 0
+            version = NoteVersion(
+                note_file_id=note.id,
+                version_number=max_version + 1,
+                storage_filename=storage_filename,
+                file_size=file_size,
+                content_hash=content_hash,
+                device_name=device_name,
+            )
+            db.session.add(version)
+            db.session.flush()
+            note.current_version_id = version.id
+            note.file_size = file_size
+            note.updated_at = datetime.utcnow()
+            db.session.commit()
+            break
+        except IntegrityError:
+            db.session.rollback()
+            version = None
+            if attempt == 2:
+                raise
+
+    return jsonify({'relpath': note.relpath, 'version': version.version_number, 'hash': content_hash}), 201
 
 
-@api_bp.route('/notes/<int:note_id>', methods=['PUT'])
+@api_bp.route('/notes/delete', methods=['POST'])
 @require_auth
-def update_note(note_id):
-    note = NoteFile.query.filter_by(
-        id=note_id, user_id=current_user.id
-    ).first_or_404()
-
-    name = request.form.get('name', '').strip()
-    if name:
-        note.name = name
-
-    original = request.files.get('original')
-    pdf = request.files.get('pdf')
-    upload_dir = user_upload_dir()
-    size = 0
-
-    if original and allowed_file(original.filename):
-        if note.original_filename:
-            old_path = os.path.join(upload_dir, note.original_filename)
-            if os.path.exists(old_path):
-                os.remove(old_path)
-        orig_name = f'{note.uuid}.rnote'
-        original.save(os.path.join(upload_dir, orig_name))
-        note.original_filename = orig_name
-
-    if pdf and allowed_file(pdf.filename):
-        if note.pdf_filename:
-            old_path = os.path.join(upload_dir, note.pdf_filename)
-            if os.path.exists(old_path):
-                os.remove(old_path)
-        pdf_name = f'{note.uuid}.pdf'
-        pdf.save(os.path.join(upload_dir, pdf_name))
-        note.pdf_filename = pdf_name
-
-    if note.original_filename:
-        p = os.path.join(upload_dir, note.original_filename)
-        if os.path.exists(p):
-            size += os.path.getsize(p)
-    if note.pdf_filename:
-        p = os.path.join(upload_dir, note.pdf_filename)
-        if os.path.exists(p):
-            size += os.path.getsize(p)
-
-    note.file_size = size
-    db.session.commit()
-
-    return jsonify({'id': note.id, 'uuid': note.uuid, 'name': note.name})
+def delete_note_sync():
+    relpath = normalize_relpath(request.form.get('relpath', ''))
+    if not relpath:
+        return jsonify({'error': 'invalid relpath'}), 400
+    note = NoteFile.query.filter_by(user_id=current_user.id, relpath=relpath).first()
+    if note:
+        _soft_delete(note)
+    return jsonify({'status': 'deleted'})
 
 
-@api_bp.route('/notes/<int:note_id>/download', methods=['GET'])
+@api_bp.route('/notes/download', methods=['GET'])
 @require_auth
-def download_original(note_id):
-    note = NoteFile.query.filter_by(
-        id=note_id, user_id=current_user.id
-    ).first_or_404()
-    if not note.original_filename:
+def download_note():
+    relpath = normalize_relpath(request.args.get('relpath', ''))
+    if not relpath:
         abort(404)
+    note = NoteFile.query.filter_by(
+        user_id=current_user.id, relpath=relpath, is_deleted=False
+    ).first()
+    if not note:
+        abort(404)
+
+    version_number = request.args.get('version', type=int)
+    version = (
+        NoteVersion.query.filter_by(note_file_id=note.id, version_number=version_number).first()
+        if version_number
+        else note.current_version
+    )
+    if not version:
+        abort(404)
+
     return send_from_directory(
         user_upload_dir(),
-        note.original_filename,
+        version.storage_filename,
         download_name=secure_filename(note.name) + '.rnote',
         as_attachment=True,
     )
@@ -424,20 +429,11 @@ def view_pdf(note_id):
 @api_bp.route('/notes/<int:note_id>', methods=['DELETE'])
 @require_auth
 def delete_note(note_id):
+    """Used by the website's Delete button. Soft-deletes so the removal
+    also propagates to any device that has this note synced, same as a
+    delete initiated from the sync client."""
     note = NoteFile.query.filter_by(
         id=note_id, user_id=current_user.id
     ).first_or_404()
-
-    upload_dir = user_upload_dir()
-    for fname in [note.original_filename, note.pdf_filename]:
-        if fname:
-            path = os.path.join(upload_dir, fname)
-            if os.path.exists(path):
-                os.remove(path)
-
-    db.session.delete(note)
-    db.session.commit()
+    _soft_delete(note)
     return jsonify({'status': 'deleted'})
-
-
-from flask import url_for

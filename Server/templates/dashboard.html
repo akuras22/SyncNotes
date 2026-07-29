@@ -16,8 +16,37 @@
   </div>
 </div>
 
+{% if current_path %}
+<div class="flex items-center mb-4" style="gap:6px;flex-wrap:wrap;">
+  <a class="text-sm" href="{{ url_for('web.dashboard') }}">My Notes</a>
+  {% for crumb in breadcrumbs %}
+    <span class="text-muted text-sm">/</span>
+    {% if not loop.last %}
+      <a class="text-sm" href="{{ url_for('web.dashboard', path=crumb.path) }}">{{ crumb.name }}</a>
+    {% else %}
+      <span class="text-sm" style="font-weight:700;">{{ crumb.name }}</span>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if folders %}
+  <div class="note-grid mb-4">
+    {% for folder in folders %}
+      <a class="note-card" href="{{ url_for('web.dashboard', path=folder.path) }}" style="text-decoration:none;color:inherit;display:block;">
+        <div class="note-card-head">
+          <div class="note-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Z"/></svg>
+          </div>
+          <h4 class="note-card-title" title="{{ folder.name }}">{{ folder.name }}</h4>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
 <div class="flex items-center justify-between mb-4">
-  <h3 style="font-size:19px;font-weight:800;margin:0;letter-spacing:-0.02em;">My Notes</h3>
+  <h3 style="font-size:19px;font-weight:800;margin:0;letter-spacing:-0.02em;">{{ "Notes" if current_path else "My Notes" }}</h3>
   {% if notes %}
   <span class="text-muted text-sm">{{ notes|length }} note{{ '' if notes|length == 1 else 's' }}</span>
   {% endif %}
@@ -36,14 +65,16 @@
         <p class="note-card-meta">
           {{ note.updated_at.strftime('%Y-%m-%d %H:%M') }}
           {% if note.file_size %} &middot; {{ (note.file_size / 1024)|round(1) }} KB{% endif %}
+          {% if note.current_version %} &middot; v{{ note.current_version.version_number }}{% endif %}
         </p>
         <div class="note-card-actions">
-          {% if note.original_filename %}
-            <a class="btn btn-sm btn-default" href="{{ url_for('api.download_original', note_id=note.id) }}">.rnote</a>
+          {% if note.current_version %}
+            <a class="btn btn-sm btn-default" href="{{ url_for('api.download_note', relpath=note.relpath) }}">.rnote</a>
           {% endif %}
           {% if note.pdf_filename %}
             <a class="btn btn-sm btn-default" href="{{ url_for('api.view_pdf', note_id=note.id) }}" target="_blank">PDF</a>
           {% endif %}
+          <a class="btn btn-sm btn-default" href="{{ url_for('web.note_versions', note_id=note.id) }}">History</a>
           <form method="POST" action="{{ url_for('api.delete_note', note_id=note.id) }}"
                 onsubmit="return swalConfirm('Delete {{ note.name|e }}?', this);" style="margin-left:auto;">
             <button type="submit" class="btn btn-sm btn-destructive">Delete</button>
@@ -52,12 +83,12 @@
       </div>
     {% endfor %}
   </div>
-{% else %}
+{% elif not folders %}
   <div class="empty-state panel">
     <div class="empty-state-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
     </div>
-    <p>No notes yet. Use the desktop app to upload your first one!</p>
+    <p>{{ "This folder is empty." if current_path else "No notes yet. Use the desktop app to upload your first one!" }}</p>
   </div>
 {% endif %}
 {% endblock %}

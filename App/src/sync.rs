@@ -1,0 +1,423 @@
+use crate::config::AppConfig;
+use notify::RecursiveMode;
+use notify_debouncer_full::{new_debouncer, DebounceEventResult};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::collections::HashMap;
+use std::fs;
+use std::io::Read;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
+
+/// Set to stop a running sync engine (mirrors tray::SHOULD_STOP_TRAY),
+/// checked by both the poll thread and the worker thread's receive loop.
+pub static STOP_SYNC: AtomicBool = AtomicBool::new(false);
+
+const POLL_INTERVAL: Duration = Duration::from_secs(60);
+const POLL_CHECK_STEP: Duration = Duration::from_millis(200);
+const DEBOUNCE_WINDOW: Duration = Duration::from_millis(1500);
+
+enum SyncEvent {
+    LocalTouched(PathBuf),
+    PollTick,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct SyncedFile {
+    hash: String,
+    version: u64,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct SyncState {
+    files: HashMap<String, SyncedFile>,
+}
+
+impl SyncState {
+    fn path() -> PathBuf {
+        let base = dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("syncnotes");
+        fs::create_dir_all(&base).ok();
+        base.join("sync-state.json")
+    }
+
+    fn load() -> Self {
+        fs::read_to_string(Self::path())
+            .ok()
+            .and_then(|data| serde_json::from_str(&data).ok())
+            .unwrap_or_default()
+    }
+
+    fn save(&self) {
+        if let Ok(data) = serde_json::to_string_pretty(self) {
+            fs::write(Self::path(), data).ok();
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct ManifestEntry {
+    relpath: String,
+    version: u64,
+    #[serde(default)]
+    deleted: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct ManifestResponse {
+    files: Vec<ManifestEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SyncResponse {
+    version: u64,
+    hash: String,
+}
+
+pub struct SyncHandle {
+    pub join: thread::JoinHandle<()>,
+}
+
+/// Starts the sync engine as a background thread pair: one thread owns all
+/// sync state exclusively (no locking needed) and processes events pulled
+/// off a channel; the other just ticks a periodic poll trigger. Call once
+/// per process start - the config in effect at that moment is used for the
+/// lifetime of this engine (a settings change takes effect on next restart).
+pub fn spawn(config: AppConfig) -> SyncHandle {
+    STOP_SYNC.store(false, Ordering::Relaxed);
+    let (tx, rx) = mpsc::channel::<SyncEvent>();
+
+    let poll_tx = tx.clone();
+    thread::spawn(move || {
+        let mut elapsed = Duration::ZERO;
+        loop {
+            if STOP_SYNC.load(Ordering::Relaxed) {
+                return;
+            }
+            thread::sleep(POLL_CHECK_STEP);
+            elapsed += POLL_CHECK_STEP;
+            if elapsed >= POLL_INTERVAL {
+                elapsed = Duration::ZERO;
+                if poll_tx.send(SyncEvent::PollTick).is_err() {
+                    return;
+                }
+            }
+        }
+    });
+
+    let join = thread::spawn(move || run(config, tx, rx));
+    SyncHandle { join }
+}
+
+fn run(config: AppConfig, tx: mpsc::Sender<SyncEvent>, rx: mpsc::Receiver<SyncEvent>) {
+    let root = PathBuf::from(&config.rnotes_dir);
+    fs::create_dir_all(&root).ok();
+
+    let mut state = SyncState::load();
+
+    let debouncer = new_debouncer(DEBOUNCE_WINDOW, None, move |result: DebounceEventResult| {
+        if let Ok(events) = result {
+            for event in events {
+                for path in &event.paths {
+                    let _ = tx.send(SyncEvent::LocalTouched(path.clone()));
+                }
+            }
+        }
+    });
+
+    let mut debouncer = debouncer.ok();
+    if let Some(d) = debouncer.as_mut() {
+        let mode = if config.sync_subdirs {
+            RecursiveMode::Recursive
+        } else {
+            RecursiveMode::NonRecursive
+        };
+        let _ = d.watch(&root, mode);
+    }
+
+    if let Some(manifest) = fetch_manifest(&config) {
+        reconcile(&config, &root, &mut state, &manifest, true);
+        state.save();
+    }
+
+    loop {
+        if STOP_SYNC.load(Ordering::Relaxed) {
+            break;
+        }
+        match rx.recv_timeout(Duration::from_millis(500)) {
+            Ok(SyncEvent::LocalTouched(path)) => {
+                handle_local_touched(&config, &root, &mut state, &path);
+                state.save();
+            }
+            Ok(SyncEvent::PollTick) => {
+                if let Some(manifest) = fetch_manifest(&config) {
+                    reconcile(&config, &root, &mut state, &manifest, false);
+                    state.save();
+                }
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => continue,
+            Err(mpsc::RecvTimeoutError::Disconnected) => break,
+        }
+    }
+
+    drop(debouncer);
+}
+
+fn reconcile(
+    config: &AppConfig,
+    root: &Path,
+    state: &mut SyncState,
+    manifest: &[ManifestEntry],
+    full_local_walk: bool,
+) {
+    for entry in manifest {
+        if !config.sync_subdirs && entry.relpath.contains('/') {
+            continue;
+        }
+        let full_path = root.join(&entry.relpath);
+        let local_exists = full_path.exists();
+
+        if entry.deleted {
+            if let Some(known) = state.files.get(&entry.relpath) {
+                if local_exists {
+                    if let Some(current_hash) = hash_file(&full_path) {
+                        if current_hash == known.hash {
+                            fs::remove_file(&full_path).ok();
+                            state.files.remove(&entry.relpath);
+                        }
+                        // else: locally dirty since last sync - leave it, it
+                        // wins per LWW and will be uploaded, undoing the delete.
+                    }
+                }
+            }
+            continue;
+        }
+
+        match state.files.get(&entry.relpath).cloned() {
+            None => {
+                if local_exists {
+                    // This device already has a file at this path that the
+                    // server also knows about (fresh install, or a stray
+                    // file). Upload wins per LWW - the prior server content
+                    // is preserved in version history either way.
+                    if let Some((version, hash)) = upload_file(config, root, &entry.relpath) {
+                        state.files.insert(entry.relpath.clone(), SyncedFile { hash, version });
+                    }
+                } else if let Some(hash) = download_file(config, root, &entry.relpath, None) {
+                    state.files.insert(
+                        entry.relpath.clone(),
+                        SyncedFile { hash, version: entry.version },
+                    );
+                }
+            }
+            Some(known) => {
+                if !local_exists {
+                    // Known to this device before, missing now - propagate
+                    // as a local delete, don't resurrect it.
+                    if delete_remote(config, &entry.relpath) {
+                        state.files.remove(&entry.relpath);
+                    }
+                    continue;
+                }
+                match hash_file(&full_path) {
+                    Some(h) if h == known.hash => {
+                        if entry.version > known.version {
+                            if let Some(new_hash) = download_file(config, root, &entry.relpath, None) {
+                                state.files.insert(
+                                    entry.relpath.clone(),
+                                    SyncedFile { hash: new_hash, version: entry.version },
+                                );
+                            }
+                        }
+                    }
+                    Some(_) => {
+                        // Edited locally since last sync - upload, it wins.
+                        if let Some((version, hash)) = upload_file(config, root, &entry.relpath) {
+                            state.files.insert(entry.relpath.clone(), SyncedFile { hash, version });
+                        }
+                    }
+                    None => {}
+                }
+            }
+        }
+    }
+
+    if full_local_walk {
+        let mut to_upload = Vec::new();
+        walk_local(root, root, config.sync_subdirs, &mut |relpath| {
+            if is_rnote(&relpath) && !manifest.iter().any(|e| e.relpath == relpath) {
+                to_upload.push(relpath);
+            }
+        });
+        for relpath in to_upload {
+            if let Some((version, hash)) = upload_file(config, root, &relpath) {
+                state.files.insert(relpath, SyncedFile { hash, version });
+            }
+        }
+    }
+}
+
+fn handle_local_touched(config: &AppConfig, root: &Path, state: &mut SyncState, path: &Path) {
+    let relpath = match relpath_for(root, path) {
+        Some(r) => r,
+        None => return,
+    };
+    if !is_rnote(&relpath) {
+        return;
+    }
+    if !config.sync_subdirs && relpath.contains('/') {
+        return;
+    }
+
+    if !path.exists() {
+        if state.files.contains_key(&relpath) && delete_remote(config, &relpath) {
+            state.files.remove(&relpath);
+        }
+        return;
+    }
+
+    let current_hash = match hash_file(path) {
+        Some(h) => h,
+        None => return,
+    };
+
+    if let Some(known) = state.files.get(&relpath) {
+        if known.hash == current_hash {
+            return;
+        }
+    }
+
+    if let Some((version, hash)) = upload_file(config, root, &relpath) {
+        state.files.insert(relpath, SyncedFile { hash, version });
+    }
+}
+
+fn walk_local(base: &Path, dir: &Path, recursive: bool, visit: &mut dyn FnMut(String)) {
+    let entries = match fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            if recursive {
+                walk_local(base, &path, recursive, visit);
+            }
+        } else if let Some(relpath) = relpath_for(base, &path) {
+            visit(relpath);
+        }
+    }
+}
+
+fn relpath_for(root: &Path, path: &Path) -> Option<String> {
+    let rel = path.strip_prefix(root).ok()?;
+    let s = rel.to_string_lossy().replace('\\', "/");
+    if s.is_empty() {
+        None
+    } else {
+        Some(s)
+    }
+}
+
+fn is_rnote(relpath: &str) -> bool {
+    relpath.to_lowercase().ends_with(".rnote")
+}
+
+fn hash_file(path: &Path) -> Option<String> {
+    let mut file = fs::File::open(path).ok()?;
+    let mut hasher = Sha256::new();
+    let mut buf = [0u8; 65536];
+    loop {
+        let n = file.read(&mut buf).ok()?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+    Some(hasher.finalize().iter().map(|b| format!("{:02x}", b)).collect())
+}
+
+fn auth_header(config: &AppConfig) -> String {
+    format!("Bearer {}", config.access_token)
+}
+
+fn fetch_manifest(config: &AppConfig) -> Option<Vec<ManifestEntry>> {
+    let url = format!("{}/api/notes/manifest", config.server_url.trim_end_matches('/'));
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .get(&url)
+        .header("Authorization", auth_header(config))
+        .send()
+        .ok()?;
+    if !resp.status().is_success() {
+        return None;
+    }
+    let data: ManifestResponse = resp.json().ok()?;
+    Some(data.files)
+}
+
+fn upload_file(config: &AppConfig, root: &Path, relpath: &str) -> Option<(u64, String)> {
+    let bytes = fs::read(root.join(relpath)).ok()?;
+    let url = format!("{}/api/notes/sync", config.server_url.trim_end_matches('/'));
+    let form = reqwest::blocking::multipart::Form::new()
+        .text("relpath", relpath.to_string())
+        .part(
+            "file",
+            reqwest::blocking::multipart::Part::bytes(bytes).file_name("upload.rnote"),
+        );
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .post(&url)
+        .header("Authorization", auth_header(config))
+        .multipart(form)
+        .send()
+        .ok()?;
+    if !resp.status().is_success() {
+        return None;
+    }
+    let data: SyncResponse = resp.json().ok()?;
+    Some((data.version, data.hash))
+}
+
+fn download_file(config: &AppConfig, root: &Path, relpath: &str, version: Option<u64>) -> Option<String> {
+    let url = format!("{}/api/notes/download", config.server_url.trim_end_matches('/'));
+    let client = reqwest::blocking::Client::new();
+    let mut req = client
+        .get(&url)
+        .header("Authorization", auth_header(config))
+        .query(&[("relpath", relpath)]);
+    if let Some(v) = version {
+        req = req.query(&[("version", v.to_string())]);
+    }
+    let resp = req.send().ok()?;
+    if !resp.status().is_success() {
+        return None;
+    }
+    let bytes = resp.bytes().ok()?;
+
+    let full_path = root.join(relpath);
+    if let Some(parent) = full_path.parent() {
+        fs::create_dir_all(parent).ok()?;
+    }
+    fs::write(&full_path, &bytes).ok()?;
+
+    let mut hasher = Sha256::new();
+    hasher.update(&bytes);
+    Some(hasher.finalize().iter().map(|b| format!("{:02x}", b)).collect())
+}
+
+fn delete_remote(config: &AppConfig, relpath: &str) -> bool {
+    let url = format!("{}/api/notes/delete", config.server_url.trim_end_matches('/'));
+    let client = reqwest::blocking::Client::new();
+    client
+        .post(&url)
+        .header("Authorization", auth_header(config))
+        .form(&[("relpath", relpath)])
+        .send()
+        .map(|r| r.status().is_success())
+        .unwrap_or(false)
+}

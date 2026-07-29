@@ -1,3 +1,4 @@
+import hashlib
 import os
 from urllib.parse import urlparse
 
@@ -7,7 +8,7 @@ from flask_login import LoginManager
 from sqlalchemy import text
 
 from config import Config
-from models import db, User
+from models import db, NoteFile, NoteVersion, User
 
 login_manager = LoginManager()
 
@@ -40,6 +41,11 @@ MIGRATIONS = {
         'ADD COLUMN authorized_user_agent VARCHAR(512) DEFAULT NULL',
         'ADD COLUMN authorized_location VARCHAR(200) DEFAULT NULL',
     ],
+    'note_file': [
+        'ADD COLUMN relpath VARCHAR(1024) NULL',
+        'ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0',
+        'ADD COLUMN current_version_id INTEGER NULL',
+    ],
 }
 
 
@@ -53,6 +59,53 @@ def run_migrations():
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+
+def backfill_note_versions():
+    """One-time, idempotent: give pre-existing NoteFile rows (from before
+    versioning/folders existed) a relpath and a version-1 NoteVersion
+    wrapping their existing single stored file, so they don't disappear
+    from the dashboard after the schema change. Safe to call every boot -
+    only touches rows where relpath is still NULL.
+    """
+    pending = NoteFile.query.filter(NoteFile.relpath.is_(None)).all()
+    for note in pending:
+        relpath = f'{note.name}.rnote'
+        collision = NoteFile.query.filter(
+            NoteFile.user_id == note.user_id,
+            NoteFile.relpath == relpath,
+            NoteFile.id != note.id,
+        ).first()
+        if collision:
+            relpath = f'{note.name} ({note.id}).rnote'
+        note.relpath = relpath
+
+        if note.original_filename:
+            upload_dir = os.path.join(Config.UPLOAD_FOLDER, str(note.user_id))
+            src_path = os.path.join(upload_dir, note.original_filename)
+            file_size = note.file_size or 0
+            content_hash = None
+            if os.path.exists(src_path):
+                file_size = os.path.getsize(src_path)
+                sha256 = hashlib.sha256()
+                with open(src_path, 'rb') as f:
+                    for chunk in iter(lambda: f.read(65536), b''):
+                        sha256.update(chunk)
+                content_hash = sha256.hexdigest()
+
+            version = NoteVersion(
+                note_file_id=note.id,
+                version_number=1,
+                storage_filename=note.original_filename,
+                file_size=file_size,
+                content_hash=content_hash,
+            )
+            db.session.add(version)
+            db.session.flush()
+            note.current_version_id = version.id
+
+    if pending:
+        db.session.commit()
 
 
 def create_app():
@@ -79,6 +132,7 @@ def create_app():
     with app.app_context():
         db.create_all()
         run_migrations()
+        backfill_note_versions()
         if User.query.count() == 0:
             username = os.environ.get('ADMIN_USERNAME', 'admin')
             email = os.environ.get('ADMIN_EMAIL', 'admin@localhost')

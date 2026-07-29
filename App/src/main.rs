@@ -3,6 +3,7 @@ mod config;
 mod icon;
 mod settings;
 mod setup;
+mod sync;
 mod theme;
 mod tray;
 
@@ -66,6 +67,8 @@ fn run_settings(mut config: AppConfig) {
     use std::sync::atomic::Ordering;
     use std::time::Duration;
 
+    let sync_handle = sync::spawn(config.clone());
+
     let tray_handle = if config.show_tray_icon {
         tray::create_tray()
     } else {
@@ -98,6 +101,8 @@ fn run_settings(mut config: AppConfig) {
         .ok();
 
         if settings::DISCONNECT_REQUESTED.swap(false, Ordering::Relaxed) {
+            sync::STOP_SYNC.store(true, Ordering::Relaxed);
+            sync_handle.join.join().ok();
             if let Some(handle) = tray_handle {
                 tray::SHOULD_STOP_TRAY.store(true, Ordering::Relaxed);
                 handle.join().ok();
@@ -122,6 +127,9 @@ fn run_settings(mut config: AppConfig) {
         }
     }
 
+    sync::STOP_SYNC.store(true, Ordering::Relaxed);
+    sync_handle.join.join().ok();
+
     if let Some(handle) = tray_handle {
         handle.join().ok();
     }
@@ -130,6 +138,9 @@ fn run_settings(mut config: AppConfig) {
 fn run_daemon() {
     use std::sync::atomic::Ordering;
     use std::time::Duration;
+
+    let initial_config = AppConfig::load().unwrap_or_default();
+    let _sync_handle = sync::spawn(initial_config);
 
     let mut tray_handle = None;
 

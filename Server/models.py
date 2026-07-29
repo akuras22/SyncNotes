@@ -25,6 +25,9 @@ class User(UserMixin, db.Model):
     def is_locked(self):
         return self.locked
 
+    def active_notes_count(self):
+        return NoteFile.query.filter_by(user_id=self.id, is_deleted=False).count()
+
     notes = db.relationship(
         'NoteFile', backref='owner', lazy=True, cascade='all, delete-orphan'
     )
@@ -88,10 +91,53 @@ class NoteFile(db.Model):
     )
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(255), nullable=False)
+    # Legacy single-file storage columns. Left in place (additive-only
+    # migration style) but unused now that content lives in NoteVersion rows.
     original_filename = db.Column(db.String(255), nullable=True)
     pdf_filename = db.Column(db.String(255), nullable=True)
     file_size = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Full relative path within the user's synced folder, e.g.
+    # "Work/Meeting.rnote" - forward-slash separated regardless of the
+    # client OS. Nullable at the DB level only so the additive migration
+    # can run against already-populated tables; application code always
+    # sets it.
+    relpath = db.Column(db.String(1024), nullable=True)
+    is_deleted = db.Column(db.Boolean, default=False, nullable=False)
+    current_version_id = db.Column(
+        db.Integer, db.ForeignKey('note_version.id'), nullable=True
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'relpath', name='uq_notefile_user_relpath'),
+    )
+
+    versions = db.relationship(
+        'NoteVersion',
+        foreign_keys='NoteVersion.note_file_id',
+        backref='note_file',
+        lazy=True,
+        cascade='all, delete-orphan',
+    )
+    current_version = db.relationship('NoteVersion', foreign_keys=[current_version_id])
+
+
+class NoteVersion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    note_file_id = db.Column(db.Integer, db.ForeignKey('note_file.id'), nullable=False)
+    version_number = db.Column(db.Integer, nullable=False)
+    storage_filename = db.Column(db.String(255), nullable=False)
+    file_size = db.Column(db.Integer, default=0)
+    content_hash = db.Column(db.String(64), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    device_name = db.Column(db.String(100), nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            'note_file_id', 'version_number', name='uq_version_notefile_number'
+        ),
     )
