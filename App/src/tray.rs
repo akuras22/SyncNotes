@@ -2,7 +2,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self, JoinHandle};
 use tray_icon::menu::{Menu, MenuEvent, MenuItem};
 use tray_icon::{Icon, TrayIcon, TrayIconBuilder, TrayIconEvent};
-use image::GenericImageView;
 
 pub static SHOULD_QUIT: AtomicBool = AtomicBool::new(false);
 pub static SHOULD_SHOW: AtomicBool = AtomicBool::new(false);
