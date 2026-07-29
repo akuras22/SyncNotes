@@ -16,11 +16,8 @@ finish() {
     echo -e "  ${GREEN}✔${NC} ${BLUE}Done.${NC}"
     echo -e "  ${YELLOW}Press Enter to close${NC}"
     read -r
-    echo -ne "\033[?1049l"
 }
-cleanup() { echo -ne "\033[?1049l"; }
-trap cleanup INT TERM EXIT
-echo -ne "\033[?1049h\033[H"
+clear
 
 select_option() {
     local prompt="$1" opt1="$2" opt2="$3"
