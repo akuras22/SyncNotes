@@ -16,6 +16,12 @@ fn load_icon() -> Option<egui::IconData> {
 }
 
 fn main() {
+    let is_daemon = std::env::args().any(|arg| arg == "--daemon");
+    if is_daemon {
+        run_daemon();
+        return;
+    }
+
     let config = AppConfig::load();
 
     match config {
@@ -100,6 +106,37 @@ fn run_settings(mut config: AppConfig) {
     }
 
     if let Some(handle) = tray_handle {
+        handle.join().ok();
+    }
+}
+
+fn run_daemon() {
+    use std::sync::atomic::Ordering;
+    use std::time::Duration;
+
+    let mut tray_handle = None;
+
+    loop {
+        let config = AppConfig::load().unwrap_or_default();
+
+        if config.show_tray_icon {
+            if tray_handle.is_none() {
+                tray_handle = tray::create_tray();
+            }
+        } else if let Some(handle) = tray_handle.take() {
+            tray::SHOULD_STOP_TRAY.store(true, Ordering::Relaxed);
+            handle.join().ok();
+        }
+
+        if tray::SHOULD_QUIT.load(Ordering::Relaxed) {
+            break;
+        }
+
+        std::thread::sleep(Duration::from_millis(500));
+    }
+
+    if let Some(handle) = tray_handle {
+        tray::SHOULD_STOP_TRAY.store(true, Ordering::Relaxed);
         handle.join().ok();
     }
 }

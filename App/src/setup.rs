@@ -72,6 +72,12 @@ impl SetupWizard {
         std::process::Command::new("open").arg(url).spawn().ok();
     }
 
+    fn start_background_app(&self) {
+        if let Ok(exe) = std::env::current_exe() {
+            std::process::Command::new(exe).arg("--daemon").spawn().ok();
+        }
+    }
+
     fn start_polling(&mut self, info: DeviceCodeInfo) {
         if self.poll_started { return; }
         self.poll_started = true;
@@ -288,6 +294,8 @@ impl eframe::App for SetupWizard {
                                     launcher.enable().ok();
                                 }
                             }
+
+                            self.start_background_app();
                             self.step = SetupStep::Done;
                         }
                     }
