@@ -1,13 +1,51 @@
+import os
 from datetime import datetime
 from functools import wraps
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
+)
 from flask_login import current_user, login_required, login_user, logout_user
 
 from api import _soft_delete, get_client_ip, parse_user_agent, resolve_geo
 from models import ApiToken, DeviceCode, NoteFile, NoteVersion, User, db
 
 web_bp = Blueprint('web', __name__)
+
+
+ALLOWED_AVATAR_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+
+def _avatar_dir():
+    d = os.path.join(current_app.config['UPLOAD_FOLDER'], 'avatars')
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _purge_note(note):
+    """Permanently remove a NoteFile: its versions' .rnote/.pdf files on
+    disk, then the DB rows. NoteFile.current_version_id points at a
+    NoteVersion row that itself points back at the NoteFile via
+    note_file_id, so it has to be cleared first - otherwise SQLAlchemy sees
+    a circular FK dependency and refuses to figure out a delete order."""
+    upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(note.user_id))
+    for version in note.versions:
+        for filename in (version.storage_filename, version.pdf_filename):
+            if not filename:
+                continue
+            path = os.path.join(upload_dir, filename)
+            if os.path.exists(path):
+                os.remove(path)
+    note.current_version_id = None
+    db.session.delete(note)
 
 
 def admin_required(f):
@@ -109,8 +147,56 @@ def delete_note(note_id):
         id=note_id, user_id=current_user.id
     ).first_or_404()
     _soft_delete(note)
-    flash(f'{note.name} deleted', 'success')
+    flash(f'{note.name} moved to Trash', 'success')
     return redirect(url_for('web.dashboard', path=request.form.get('path', '')))
+
+
+@web_bp.route('/trash')
+@login_required
+def trash():
+    notes = (
+        NoteFile.query.filter_by(user_id=current_user.id, is_deleted=True)
+        .order_by(NoteFile.updated_at.desc())
+        .all()
+    )
+    return render_template('trash.html', notes=notes)
+
+
+@web_bp.route('/trash/<int:note_id>/restore', methods=['POST'])
+@login_required
+def restore_note(note_id):
+    note = NoteFile.query.filter_by(
+        id=note_id, user_id=current_user.id, is_deleted=True
+    ).first_or_404()
+    note.is_deleted = False
+    note.updated_at = datetime.utcnow()
+    db.session.commit()
+    flash(f'{note.name} restored', 'success')
+    return redirect(url_for('web.trash'))
+
+
+@web_bp.route('/trash/<int:note_id>/purge', methods=['POST'])
+@login_required
+def purge_note(note_id):
+    note = NoteFile.query.filter_by(
+        id=note_id, user_id=current_user.id, is_deleted=True
+    ).first_or_404()
+    name = note.name
+    _purge_note(note)
+    db.session.commit()
+    flash(f'{name} permanently deleted', 'success')
+    return redirect(url_for('web.trash'))
+
+
+@web_bp.route('/trash/empty', methods=['POST'])
+@login_required
+def empty_trash():
+    notes = NoteFile.query.filter_by(user_id=current_user.id, is_deleted=True).all()
+    for note in notes:
+        _purge_note(note)
+    db.session.commit()
+    flash('Trash emptied', 'success')
+    return redirect(url_for('web.trash'))
 
 
 @web_bp.route('/login', methods=['GET', 'POST'])
@@ -328,7 +414,45 @@ def settings():
                 db.session.commit()
                 flash('Password updated', 'success')
 
+        elif action == 'avatar':
+            file = request.files.get('avatar')
+            if not file or not file.filename:
+                flash('Choose an image to upload', 'error')
+            else:
+                ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+                if ext not in ALLOWED_AVATAR_EXTENSIONS:
+                    flash('Unsupported image type - use PNG, JPG, GIF or WEBP', 'error')
+                else:
+                    avatar_dir = _avatar_dir()
+                    if current_user.avatar_filename:
+                        old_path = os.path.join(avatar_dir, current_user.avatar_filename)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    filename = f'{current_user.id}.{ext}'
+                    file.save(os.path.join(avatar_dir, filename))
+                    current_user.avatar_filename = filename
+                    db.session.commit()
+                    flash('Profile picture updated', 'success')
+
+        elif action == 'remove_avatar':
+            if current_user.avatar_filename:
+                path = os.path.join(_avatar_dir(), current_user.avatar_filename)
+                if os.path.exists(path):
+                    os.remove(path)
+                current_user.avatar_filename = None
+                db.session.commit()
+            flash('Profile picture removed', 'success')
+
     return render_template('settings.html')
+
+
+@web_bp.route('/avatar/<int:user_id>')
+@login_required
+def avatar(user_id):
+    user = User.query.get_or_404(user_id)
+    if not user.avatar_filename:
+        abort(404)
+    return send_from_directory(_avatar_dir(), user.avatar_filename)
 
 
 @web_bp.route('/admin')

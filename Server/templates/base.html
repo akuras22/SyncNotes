@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=14">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=15">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
   function swalConfirm(msg, form) {
@@ -44,6 +44,11 @@
     {% if current_user.is_authenticated %}
     <nav class="headerbar-nav">
       <a class="headerbar-btn{% if request.endpoint == 'web.dashboard' %} active{% endif %}" href="{{ url_for('web.dashboard') }}">Notes</a>
+      <a class="headerbar-btn{% if request.endpoint == 'web.trash' %} active{% endif %}" href="{{ url_for('web.trash') }}" style="gap:8px;">
+        Trash
+        {% set trash_count = current_user.trash_count() %}
+        {% if trash_count %}<span class="badge badge-red" style="padding:2px 8px;">{{ trash_count }}</span>{% endif %}
+      </a>
       <a class="headerbar-btn{% if request.endpoint == 'web.authorize_device' %} active{% endif %}" href="{{ url_for('web.authorize_device') }}">Apps</a>
       <a class="headerbar-btn{% if request.endpoint == 'web.settings' %} active{% endif %}" href="{{ url_for('web.settings') }}">Settings</a>
       {% if current_user.is_admin() %}
@@ -52,7 +57,13 @@
     </nav>
     <div class="headerbar-nav">
       <span class="headerbar-user">
-        <span class="user-avatar">{{ current_user.username[0]|upper }}</span>
+        <span class="user-avatar">
+          {% if current_user.avatar_filename %}
+            <img src="{{ url_for('web.avatar', user_id=current_user.id) }}" alt="">
+          {% else %}
+            {{ current_user.username[0]|upper }}
+          {% endif %}
+        </span>
         {{ current_user.username }}
       </span>
       <a class="headerbar-btn" href="{{ url_for('web.logout') }}">Logout</a>

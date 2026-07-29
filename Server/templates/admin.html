@@ -26,7 +26,18 @@
       <tbody>
         {% for u in users %}
           <tr style="{{ 'opacity:0.5;' if u.is_locked() }}">
-            <td>{{ u.username }}</td>
+            <td>
+              <span class="flex items-center" style="gap:8px;">
+                <span class="user-avatar" style="width:22px;height:22px;font-size:10px;">
+                  {% if u.avatar_filename %}
+                    <img src="{{ url_for('web.avatar', user_id=u.id) }}" alt="">
+                  {% else %}
+                    {{ u.username[0]|upper }}
+                  {% endif %}
+                </span>
+                {{ u.username }}
+              </span>
+            </td>
             <td>{{ u.email }}</td>
             <td><span class="badge badge-{{ 'red' if u.is_admin() else 'gray' }}">{{ u.role }}</span></td>
             <td>

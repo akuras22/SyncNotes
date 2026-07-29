@@ -62,6 +62,9 @@ def ensure_database():
 
 
 MIGRATIONS = {
+    'user': [
+        'ADD COLUMN avatar_filename VARCHAR(255) NULL',
+    ],
     'api_token': [
         'ADD COLUMN last_ip VARCHAR(45) DEFAULT NULL',
         'ADD COLUMN last_user_agent VARCHAR(512) DEFAULT NULL',

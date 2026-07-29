@@ -18,6 +18,7 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), default='user')
     locked = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    avatar_filename = db.Column(db.String(255), nullable=True)
 
     def is_admin(self):
         return self.role == 'admin'
@@ -27,6 +28,9 @@ class User(UserMixin, db.Model):
 
     def active_notes_count(self):
         return NoteFile.query.filter_by(user_id=self.id, is_deleted=False).count()
+
+    def trash_count(self):
+        return NoteFile.query.filter_by(user_id=self.id, is_deleted=True).count()
 
     notes = db.relationship(
         'NoteFile', backref='owner', lazy=True, cascade='all, delete-orphan'
@@ -123,7 +127,14 @@ class NoteFile(db.Model):
         lazy=True,
         cascade='all, delete-orphan',
     )
-    current_version = db.relationship('NoteVersion', foreign_keys=[current_version_id])
+    # post_update=True: current_version_id and NoteVersion.note_file_id are
+    # mutual FKs between these two tables, which SQLAlchemy can't otherwise
+    # linearize into a single DELETE plan (raises CircularDependencyError)
+    # when a NoteFile with versions is deleted outright - this tells it to
+    # null out current_version_id via a separate UPDATE first.
+    current_version = db.relationship(
+        'NoteVersion', foreign_keys=[current_version_id], post_update=True
+    )
 
 
 class NoteVersion(db.Model):

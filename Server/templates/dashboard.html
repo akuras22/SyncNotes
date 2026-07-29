@@ -88,7 +88,7 @@
           {% endif %}
           <a class="btn btn-sm btn-default" href="{{ url_for('web.note_versions', note_id=note.id) }}">History</a>
           <form method="POST" action="{{ url_for('web.delete_note', note_id=note.id) }}"
-                onsubmit="return swalConfirm('Delete {{ note.name|e }}?', this);">
+                onsubmit="return swalConfirm('Move {{ note.name|e }} to Trash?', this);">
             <input type="hidden" name="path" value="{{ current_path }}">
             <button type="submit" class="btn btn-sm btn-destructive">Delete</button>
           </form>

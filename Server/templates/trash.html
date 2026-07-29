@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Trash — SyncNotes{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4" style="gap:12px;flex-wrap:wrap;">
+  <div>
+    <h3 style="font-size:19px;font-weight:800;margin:0;letter-spacing:-0.02em;">Trash</h3>
+    <p class="text-muted text-sm" style="margin:4px 0 0;">Deleted notes stay here until you remove them for good.</p>
+  </div>
+  {% if notes %}
+  <form method="POST" action="{{ url_for('web.empty_trash') }}"
+        onsubmit="return swalConfirm('Permanently delete all {{ notes|length }} item(s) in Trash? This cannot be undone.', this);">
+    <button type="submit" class="btn btn-destructive">Empty Trash</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if notes %}
+<div class="note-grid">
+  {% for note in notes %}
+    <div class="note-card" style="animation-delay: {{ loop.index0 * 40 }}ms;">
+      <div class="note-card-head">
+        <div class="note-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M18 7l-.8 12.2A2 2 0 0 1 15.2 21H8.8a2 2 0 0 1-2-1.8L6 7"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        </div>
+        <h4 class="note-card-title" title="{{ note.name }}">{{ note.name }}</h4>
+      </div>
+      <p class="note-card-meta" title="{{ note.relpath }}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ note.relpath }}</p>
+      <p class="note-card-meta">
+        Deleted {{ note.updated_at|de_dt }}
+        {% if note.file_size %} &middot; {{ (note.file_size / 1024)|round(1) }} KB{% endif %}
+      </p>
+      <div class="note-card-actions">
+        <form method="POST" action="{{ url_for('web.restore_note', note_id=note.id) }}">
+          <button type="submit" class="btn btn-sm btn-default">Restore</button>
+        </form>
+        <form method="POST" action="{{ url_for('web.purge_note', note_id=note.id) }}"
+              onsubmit="return swalConfirm('Permanently delete {{ note.name|e }}? This cannot be undone.', this);">
+          <button type="submit" class="btn btn-sm btn-destructive">Delete Forever</button>
+        </form>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% else %}
+  <div class="empty-state panel">
+    <div class="empty-state-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M18 7l-.8 12.2A2 2 0 0 1 15.2 21H8.8a2 2 0 0 1-2-1.8L6 7"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+    </div>
+    <p>Trash is empty.</p>
+  </div>
+{% endif %}
+{% endblock %}
