@@ -24,6 +24,7 @@ pub struct SetupWizard {
     rnotes_dir_edit: String,
     auto_start: bool,
     sync_subdirs: bool,
+    logo: Option<egui::TextureHandle>,
 }
 
 impl SetupWizard {
@@ -45,7 +46,19 @@ impl SetupWizard {
             rnotes_dir_edit: default_dir,
             auto_start: true,
             sync_subdirs: true,
+            logo: None,
         }
+    }
+
+    fn load_logo(&mut self, ui: &egui::Ui) -> Option<&egui::TextureHandle> {
+        if self.logo.is_none() {
+            let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
+            let rgba = img.to_rgba8();
+            let (w, h) = rgba.dimensions();
+            let color_image = egui::ColorImage::from_rgba_unmultiplied([w as _, h as _], rgba.as_raw());
+            self.logo = Some(ui.ctx().load_texture("setup_logo", color_image, Default::default()));
+        }
+        self.logo.as_ref()
     }
 
     fn open_browser(&self, url: &str) {
@@ -90,15 +103,15 @@ impl eframe::App for SetupWizard {
             ui.visuals_mut().window_fill = egui::Color32::from_rgb(0x1e, 0x1e, 0x1e);
 
             ui.vertical_centered(|ui| {
-                ui.add_space(32.0);
+                ui.add_space(ui.available_height() * 0.1);
+
+                if let Some(logo) = self.load_logo(ui) {
+                    ui.add(egui::Image::new(logo).max_width(96.0));
+                    ui.add_space(8.0);
+                }
 
                 match self.step {
                     SetupStep::Welcome => {
-                        ui.add(
-                            egui::Image::new(egui::include_image!("../../logo.png"))
-                                .max_width(96.0)
-                        );
-                        ui.add_space(8.0);
                         ui.heading(egui::RichText::new("Welcome to SyncNotes").size(32.0).strong());
                         ui.add_space(12.0);
                         ui.label("Sync your Rnote files to your private server.");
@@ -282,7 +295,7 @@ impl eframe::App for SetupWizard {
                     if ui.button("Clear Error").clicked() { self.auth_error = None; }
                 }
 
-                ui.add_space(32.0);
+                ui.add_space(ui.available_height().max(0.0));
             });
         });
         

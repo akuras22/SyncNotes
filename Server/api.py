@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timedelta
 from functools import wraps
 
+import requests
 from flask import (
     Blueprint,
     abort,
@@ -21,6 +22,21 @@ api_bp = Blueprint('api', __name__, url_prefix='/api')
 ALLOWED_EXTENSIONS = {'rnote', 'pdf'}
 
 
+def resolve_geo(ip: str) -> str | None:
+    try:
+        resp = requests.get(
+            f'http://ip-api.com/json/{ip}?fields=city,country',
+            timeout=3,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            parts = [p for p in [data.get('city'), data.get('country')] if p]
+            return ', '.join(parts) if parts else None
+    except Exception:
+        pass
+    return None
+
+
 def require_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -29,7 +45,17 @@ def require_auth(f):
             token_str = auth[7:]
             token = ApiToken.query.filter_by(token=token_str).first()
             if token:
+                ip = request.headers.get('X-Forwarded-For', request.remote_addr or '')
+                if ip and ',' in ip:
+                    ip = ip.split(',')[0].strip()
+                ua = (request.headers.get('User-Agent', '') or '')[:512]
                 token.last_used_at = datetime.utcnow()
+                token.last_ip = ip or None
+                token.last_user_agent = ua or None
+                if ip and not token.last_location:
+                    location = resolve_geo(ip)
+                    if location:
+                        token.last_location = location
                 db.session.commit()
                 login_user(token.user)
                 return f(*args, **kwargs)

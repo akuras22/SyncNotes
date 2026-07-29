@@ -18,26 +18,42 @@
 </div>
 
 <div class="panel" style="margin-top:16px;">
-  <div class="panel-header">Authorized Apps</div>
+  <div class="panel-header">Authorized Apps ({{ tokens|length }})</div>
   <div class="panel-body">
     {% if tokens %}
       {% for token in tokens %}
         {% if token.name.startswith('Device:') %}
-        <div class="flex items-center justify-between" style="padding:12px 0;border-bottom:1px solid var(--border);" id="token-{{ token.id }}">
-          <div class="flex items-center" style="gap:8px;">
-            <span class="token-name" data-id="{{ token.id }}">{{ token.name[8:] }}</span>
-            <form method="POST" action="{{ url_for('web.rename_token', token_id=token.id) }}" class="inline-form" style="display:none;" id="rename-form-{{ token.id }}">
-              <input class="form-input" type="text" name="name" value="{{ token.name[8:] }}" style="width:180px;padding:4px 8px;font-size:14px;" required>
-              <button class="btn btn-sm btn-primary" type="submit">Save</button>
-              <button class="btn btn-sm btn-flat" type="button" onclick="cancelRename({{ token.id }})">Cancel</button>
-            </form>
+        <div style="padding:14px 0;border-bottom:1px solid var(--border);" id="token-{{ token.id }}">
+          <div class="flex items-center justify-between" style="margin-bottom:6px;">
+            <div class="flex items-center" style="gap:8px;">
+              <span class="token-name" data-id="{{ token.id }}" style="font-weight:600;">{{ token.name[8:] }}</span>
+              <form method="POST" action="{{ url_for('web.rename_token', token_id=token.id) }}" class="inline-form" style="display:none;" id="rename-form-{{ token.id }}">
+                <input class="form-input" type="text" name="name" value="{{ token.name[8:] }}" style="width:180px;padding:4px 8px;font-size:14px;" required>
+                <button class="btn btn-sm btn-primary" type="submit">Save</button>
+                <button class="btn btn-sm btn-flat" type="button" onclick="cancelRename({{ token.id }})">Cancel</button>
+              </form>
+            </div>
+            <div class="flex items-center" style="gap:6px;">
+              <button class="btn btn-sm btn-flat" onclick="startRename({{ token.id }})">Rename</button>
+              <form method="POST" action="{{ url_for('web.delete_token', token_id=token.id) }}" onsubmit="return swalConfirm('Revoke this token? The app will be logged out immediately.', this);" style="display:inline;">
+                <button class="btn btn-sm btn-destructive" type="submit">Revoke</button>
+              </form>
+            </div>
           </div>
-          <div class="flex items-center" style="gap:6px;">
-            <span class="text-muted text-sm">Created {{ token.created_at.strftime('%Y-%m-%d') }}</span>
-            <button class="btn btn-sm btn-flat" onclick="startRename({{ token.id }})">Rename</button>
-            <form method="POST" action="{{ url_for('web.delete_token', token_id=token.id) }}" onsubmit="return swalConfirm('Revoke this token? The app will be logged out immediately.', this);" style="display:inline;">
-              <button class="btn btn-sm btn-destructive" type="submit">Revoke</button>
-            </form>
+          <div class="text-muted text-sm" style="line-height:1.7;">
+            <div>Created: {{ token.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</div>
+            {% if token.last_used_at %}
+            <div>Last used: {{ token.last_used_at.strftime('%Y-%m-%d %H:%M UTC') }}</div>
+            {% endif %}
+            {% if token.last_ip %}
+            <div>IP: <code style="color:var(--text);background:var(--bg-card);padding:1px 6px;border-radius:3px;">{{ token.last_ip }}</code></div>
+            {% endif %}
+            {% if token.last_location %}
+            <div>Location: {{ token.last_location }}</div>
+            {% endif %}
+            {% if token.last_user_agent %}
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:560px;" title="{{ token.last_user_agent }}">Device: {{ token.last_user_agent[:100] }}{% if token.last_user_agent|length > 100 %}...{% endif %}</div>
+            {% endif %}
           </div>
         </div>
         {% endif %}

@@ -7,6 +7,7 @@ pub struct SettingsWindow {
     server_url_edit: String,
     rnotes_dir_edit: String,
     message: String,
+    logo: Option<egui::TextureHandle>,
 }
 
 impl SettingsWindow {
@@ -16,7 +17,19 @@ impl SettingsWindow {
             rnotes_dir_edit: config.rnotes_dir.clone(),
             message: String::new(),
             config,
+            logo: None,
         }
+    }
+
+    fn load_logo(&mut self, ui: &egui::Ui) -> Option<&egui::TextureHandle> {
+        if self.logo.is_none() {
+            let img = image::load_from_memory(include_bytes!("../../logo.png")).ok()?;
+            let rgba = img.to_rgba8();
+            let (w, h) = rgba.dimensions();
+            let color_image = egui::ColorImage::from_rgba_unmultiplied([w as _, h as _], rgba.as_raw());
+            self.logo = Some(ui.ctx().load_texture("settings_logo", color_image, Default::default()));
+        }
+        self.logo.as_ref()
     }
 }
 
@@ -29,12 +42,12 @@ impl eframe::App for SettingsWindow {
             ui.visuals_mut().window_fill = egui::Color32::from_rgb(0x1e, 0x1e, 0x1e);
 
             ui.vertical_centered(|ui| {
-                ui.add_space(16.0);
-                ui.add(
-                    egui::Image::new(egui::include_image!("../../logo.png"))
-                        .max_width(64.0)
-                );
-                ui.add_space(8.0);
+                ui.add_space(ui.available_height() * 0.08);
+
+                if let Some(logo) = self.load_logo(ui) {
+                    ui.add(egui::Image::new(logo).max_width(64.0));
+                    ui.add_space(8.0);
+                }
                 ui.heading(egui::RichText::new("SyncNotes Settings").size(24.0).strong());
                 ui.add_space(24.0);
 
@@ -82,10 +95,6 @@ impl eframe::App for SettingsWindow {
                             ui.label("Sync:");
                             ui.checkbox(&mut self.config.sync_subdirs, "Include subdirectories");
                             ui.end_row();
-
-                            ui.label("Tray Icon:");
-                            ui.checkbox(&mut self.config.show_tray_icon, "Show in system tray");
-                            ui.end_row();
                         });
                 });
 
@@ -115,6 +124,8 @@ impl eframe::App for SettingsWindow {
                     };
                     ui.colored_label(color, &self.message);
                 }
+
+                ui.add_space(ui.available_height().max(0.0));
             });
         });
     }

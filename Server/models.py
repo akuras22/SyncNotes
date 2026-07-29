@@ -66,6 +66,9 @@ class ApiToken(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_used_at = db.Column(db.DateTime, nullable=True)
+    last_ip = db.Column(db.String(45), nullable=True)
+    last_user_agent = db.Column(db.String(512), nullable=True)
+    last_location = db.Column(db.String(200), nullable=True)
 
     @staticmethod
     def generate_token():

@@ -41,7 +41,7 @@ fn main() {
 fn run_setup() {
     let icon = load_icon();
     let mut vp = egui::ViewportBuilder::default()
-        .with_inner_size([480.0, 560.0])
+        .with_inner_size([480.0, 640.0])
         .with_resizable(false)
         .with_title("SyncNotes Setup");
     if let Some(icon) = icon {
@@ -64,7 +64,7 @@ fn run_setup() {
 fn run_settings(config: AppConfig) {
     let icon = load_icon();
     let mut vp = egui::ViewportBuilder::default()
-        .with_inner_size([540.0, 400.0])
+        .with_inner_size([540.0, 520.0])
         .with_resizable(false)
         .with_title("SyncNotes Settings");
     if let Some(icon) = icon {
