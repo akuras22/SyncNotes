@@ -1,9 +1,10 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self, JoinHandle};
 use tray_icon::menu::{Menu, MenuEvent, MenuItem};
-use tray_icon::{Icon, TrayIconBuilder};
+use tray_icon::{Icon, TrayIconBuilder, TrayIconEvent};
 
 pub static SHOULD_QUIT: AtomicBool = AtomicBool::new(false);
+pub static SHOULD_SHOW: AtomicBool = AtomicBool::new(false);
 
 pub fn create_tray() -> Option<JoinHandle<()>> {
     let handle = thread::Builder::new()
@@ -19,6 +20,7 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
             }
 
             let show = MenuItem::new("Show Settings", true, None);
+            let show_id = show.id().clone();
             let quit = MenuItem::new("Quit", true, None);
             let quit_id = quit.id().clone();
 
@@ -27,9 +29,17 @@ pub fn create_tray() -> Option<JoinHandle<()>> {
                 return;
             }
 
+            TrayIconEvent::set_event_handler(Some(move |event: TrayIconEvent| {
+                if let TrayIconEvent::Click { button: tray_icon::ClickType::Left, .. } = event {
+                    SHOULD_SHOW.store(true, Ordering::Relaxed);
+                }
+            }));
+
             MenuEvent::set_event_handler(Some(move |event: tray_icon::menu::MenuEvent| {
                 if event.id == quit_id {
                     SHOULD_QUIT.store(true, Ordering::Relaxed);
+                } else if event.id == show_id {
+                    SHOULD_SHOW.store(true, Ordering::Relaxed);
                 }
             }));
 

@@ -57,35 +57,57 @@ fn run_setup() {
     .ok();
 }
 
-fn run_settings(config: AppConfig) {
-    let tray = if config.show_tray_icon {
+fn run_settings(mut config: AppConfig) {
+    use std::sync::atomic::Ordering;
+    use std::time::Duration;
+
+    let tray_handle = if config.show_tray_icon {
         tray::create_tray()
     } else {
         None
     };
 
-    let icon = load_icon();
-    let mut vp = egui::ViewportBuilder::default()
-        .with_inner_size([540.0, 520.0])
-        .with_resizable(false)
-        .with_title("SyncNotes Settings");
-    if let Some(icon) = icon {
-        vp = vp.with_icon(icon);
+    let tray_alive = tray_handle.is_some();
+
+    'outer: loop {
+        let icon = load_icon();
+        let mut vp = egui::ViewportBuilder::default()
+            .with_inner_size([540.0, 520.0])
+            .with_resizable(false)
+            .with_title("SyncNotes Settings");
+        if let Some(icon) = icon {
+            vp = vp.with_icon(icon);
+        }
+
+        let options = eframe::NativeOptions {
+            viewport: vp,
+            ..Default::default()
+        };
+
+        eframe::run_native(
+            "SyncNotes Settings",
+            options,
+            Box::new(move |_cc| Ok(Box::new(settings::SettingsWindow::new(config)))),
+        )
+        .ok();
+
+        if !tray_alive || tray::SHOULD_QUIT.load(Ordering::Relaxed) {
+            break;
+        }
+
+        loop {
+            std::thread::sleep(Duration::from_millis(200));
+            if tray::SHOULD_SHOW.swap(false, Ordering::Relaxed) {
+                config = config::AppConfig::load().unwrap_or_default();
+                continue 'outer;
+            }
+            if tray::SHOULD_QUIT.load(Ordering::Relaxed) {
+                break 'outer;
+            }
+        }
     }
 
-    let options = eframe::NativeOptions {
-        viewport: vp,
-        ..Default::default()
-    };
-
-    eframe::run_native(
-        "SyncNotes Settings",
-        options,
-        Box::new(move |_cc| Ok(Box::new(settings::SettingsWindow::new(config)))),
-    )
-    .ok();
-
-    if let Some(handle) = tray {
+    if let Some(handle) = tray_handle {
         handle.join().ok();
     }
 }
