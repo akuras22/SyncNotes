@@ -976,6 +976,49 @@ a:hover {
 .justify-center { justify-content: center; }
 .w-full { width: 100%; }
 
+/* ── Trash FAB (deliberately low-key: a small corner icon instead of a
+   loud navbar item, since it's rarely-used but should stay reachable) ── */
+.trash-fab {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  color: var(--text-tertiary);
+  box-shadow: var(--shadow);
+  z-index: 200;
+  transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition-fast), box-shadow var(--transition);
+}
+
+.trash-fab svg {
+  width: 18px;
+  height: 18px;
+}
+
+.trash-fab:hover {
+  background: var(--glass-strong);
+  border-color: var(--border-strong);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.trash-fab:active {
+  transform: translateY(0) scale(0.94);
+}
+
+.trash-fab.active {
+  color: var(--blue-light);
+  border-color: rgba(53, 132, 228, 0.4);
+  background: var(--gradient-brand-soft);
+}
+
 /* ── Container ── */
 .container {
   max-width: 1200px;

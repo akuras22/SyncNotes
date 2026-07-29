@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ note.name }} — Version History — SyncNotes{% endblock %}
+{% set is_admin_view = note.user_id != current_user.id %}
 {% block content %}
 <div class="flex items-center justify-between mb-4" style="gap:12px;flex-wrap:wrap;">
   <div>
-    <a class="text-sm" href="{{ url_for('web.dashboard') }}">&larr; My Notes</a>
+    <a class="text-sm" href="{{ url_for('web.admin_view_notes', user_id=note.user_id) if is_admin_view else url_for('web.dashboard') }}">&larr; {{ "Back to Notes" if is_admin_view else "My Notes" }}</a>
     <h3 style="font-size:19px;font-weight:800;margin:6px 0 0;letter-spacing:-0.02em;">{{ note.name }}</h3>
     <p class="text-muted text-sm" style="margin:2px 0 0;">{{ note.relpath }}</p>
   </div>
@@ -37,9 +38,9 @@
             <td style="text-align:right;">
               {% if version.pdf_filename %}
                 <a class="btn btn-sm btn-default" href="{{ url_for('web.view_note', note_id=note.id, version=version.version_number) }}">View</a>
-                <a class="btn btn-sm btn-default" href="{{ url_for('api.download_pdf', relpath=note.relpath, version=version.version_number, attachment=1) }}">PDF</a>
+                <a class="btn btn-sm btn-default" href="{{ url_for('api.admin_download_pdf', note_id=note.id, version=version.version_number, attachment=1) if is_admin_view else url_for('api.download_pdf', relpath=note.relpath, version=version.version_number, attachment=1) }}">PDF</a>
               {% endif %}
-              <a class="btn btn-sm btn-default" href="{{ url_for('api.download_note', relpath=note.relpath, version=version.version_number) }}">.rnote</a>
+              <a class="btn btn-sm btn-default" href="{{ url_for('api.admin_download_note', note_id=note.id, version=version.version_number) if is_admin_view else url_for('api.download_note', relpath=note.relpath, version=version.version_number) }}">.rnote</a>
             </td>
           </tr>
         {% endfor %}

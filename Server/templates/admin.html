@@ -50,6 +50,7 @@
             <td>{{ u.created_at|de_date }}</td>
             <td>{{ u.active_notes_count() }}</td>
             <td style="text-align:right;">
+              <a class="btn btn-sm btn-default" href="{{ url_for('web.admin_view_notes', user_id=u.id) }}">View Notes</a>
               {% if u.id != current_user.id %}
                 <button class="btn btn-sm btn-default" onclick="document.getElementById('editModal-{{ u.id }}').style.display='flex'">Edit</button>
                 <form method="POST" action="{{ url_for('web.toggle_admin', user_id=u.id) }}" style="display:inline;">
@@ -111,7 +112,7 @@
 {% if u.id != current_user.id %}
 <div class="modal-overlay" id="editModal-{{ u.id }}" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
   <div class="modal" onclick="event.stopPropagation()">
-    <form method="POST" action="{{ url_for('web.edit_user', user_id=u.id) }}">
+    <form method="POST" action="{{ url_for('web.edit_user', user_id=u.id) }}" enctype="multipart/form-data">
       <div class="modal-header">
         <h3 class="modal-title">Edit User: {{ u.username }}</h3>
       </div>
@@ -127,6 +128,24 @@
         <div class="form-group">
           <label class="form-label">New Password <span class="text-muted text-sm" style="font-weight:400;">(leave blank to keep current)</span></label>
           <input class="form-input" type="password" name="password" placeholder="New password">
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Profile Picture</label>
+          <div class="flex items-center" style="gap:10px;">
+            <span class="user-avatar" style="width:40px;height:40px;font-size:16px;">
+              {% if u.avatar_filename %}
+                <img src="{{ url_for('web.avatar', user_id=u.id) }}" alt="">
+              {% else %}
+                {{ u.username[0]|upper }}
+              {% endif %}
+            </span>
+            <input class="form-input" type="file" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" style="flex:1;">
+          </div>
+          {% if u.avatar_filename %}
+          <label class="flex items-center text-sm" style="gap:6px;margin-top:8px;font-weight:500;cursor:pointer;">
+            <input type="checkbox" name="remove_avatar" value="1"> Remove current picture
+          </label>
+          {% endif %}
         </div>
       </div>
       <div class="modal-footer">

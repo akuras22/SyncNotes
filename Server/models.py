@@ -29,9 +29,6 @@ class User(UserMixin, db.Model):
     def active_notes_count(self):
         return NoteFile.query.filter_by(user_id=self.id, is_deleted=False).count()
 
-    def trash_count(self):
-        return NoteFile.query.filter_by(user_id=self.id, is_deleted=True).count()
-
     notes = db.relationship(
         'NoteFile', backref='owner', lazy=True, cascade='all, delete-orphan'
     )

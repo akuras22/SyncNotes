@@ -15,7 +15,7 @@ from flask import (
     request,
     send_from_directory,
 )
-from flask_login import current_user, login_user
+from flask_login import current_user, login_required, login_user
 from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 
@@ -515,6 +515,54 @@ def download_pdf():
     as_attachment = request.args.get('attachment', '') in ('1', 'true')
     return send_from_directory(
         user_upload_dir(),
+        version.pdf_filename,
+        mimetype='application/pdf',
+        as_attachment=as_attachment,
+        download_name=(secure_filename(note.name) + '.pdf') if as_attachment else None,
+    )
+
+
+def _admin_note_or_404(note_id):
+    if not current_user.is_admin():
+        abort(403)
+    return NoteFile.query.filter_by(id=note_id, is_deleted=False).first_or_404()
+
+
+def _admin_version_or_404(note, version_number):
+    return (
+        NoteVersion.query.filter_by(note_file_id=note.id, version_number=version_number).first()
+        if version_number
+        else note.current_version
+    )
+
+
+@api_bp.route('/admin/notes/<int:note_id>/download', methods=['GET'])
+@login_required
+def admin_download_note(note_id):
+    note = _admin_note_or_404(note_id)
+    version = _admin_version_or_404(note, request.args.get('version', type=int))
+    if not version:
+        abort(404)
+    upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(note.user_id))
+    return send_from_directory(
+        upload_dir,
+        version.storage_filename,
+        download_name=secure_filename(note.name) + '.rnote',
+        as_attachment=True,
+    )
+
+
+@api_bp.route('/admin/notes/<int:note_id>/pdf', methods=['GET'])
+@login_required
+def admin_download_pdf(note_id):
+    note = _admin_note_or_404(note_id)
+    version = _admin_version_or_404(note, request.args.get('version', type=int))
+    if not version or not version.pdf_filename:
+        abort(404)
+    upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(note.user_id))
+    as_attachment = request.args.get('attachment', '') in ('1', 'true')
+    return send_from_directory(
+        upload_dir,
         version.pdf_filename,
         mimetype='application/pdf',
         as_attachment=as_attachment,

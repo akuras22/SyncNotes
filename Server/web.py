@@ -30,6 +30,67 @@ def _avatar_dir():
     return d
 
 
+def _save_avatar(user, file):
+    """Shared by the self-service settings page and the admin edit-user
+    modal. Returns (ok, error_message)."""
+    ext = file.filename.rsplit('.', 1)[-1].lower() if file.filename and '.' in file.filename else ''
+    if ext not in ALLOWED_AVATAR_EXTENSIONS:
+        return False, 'Unsupported image type - use PNG, JPG, GIF or WEBP'
+    avatar_dir = _avatar_dir()
+    if user.avatar_filename:
+        old_path = os.path.join(avatar_dir, user.avatar_filename)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+    filename = f'{user.id}.{ext}'
+    file.save(os.path.join(avatar_dir, filename))
+    user.avatar_filename = filename
+    return True, None
+
+
+def _remove_avatar(user):
+    if user.avatar_filename:
+        path = os.path.join(_avatar_dir(), user.avatar_filename)
+        if os.path.exists(path):
+            os.remove(path)
+        user.avatar_filename = None
+
+
+def _list_notes(user_id, path):
+    """Shared by the owner's dashboard and the admin's read-only view of
+    another user's notes: groups a user's active NoteFile rows into the
+    subfolders/files visible at `path`."""
+    all_notes = NoteFile.query.filter_by(user_id=user_id, is_deleted=False).all()
+
+    prefix = f'{path}/' if path else ''
+    folder_names = set()
+    files = []
+    for note in all_notes:
+        relpath = note.relpath or ''
+        if not relpath.startswith(prefix):
+            continue
+        remainder = relpath[len(prefix):]
+        if not remainder:
+            continue
+        if '/' in remainder:
+            folder_names.add(remainder.split('/', 1)[0])
+        else:
+            files.append(note)
+
+    files.sort(key=lambda n: n.updated_at, reverse=True)
+
+    breadcrumbs = []
+    if path:
+        parts = path.split('/')
+        for i, part in enumerate(parts):
+            breadcrumbs.append({'name': part, 'path': '/'.join(parts[:i + 1])})
+
+    folders = [
+        {'name': name, 'path': f'{path}/{name}' if path else name}
+        for name in sorted(folder_names)
+    ]
+    return files, folders, breadcrumbs
+
+
 def _purge_note(note):
     """Permanently remove a NoteFile: its versions' .rnote/.pdf files on
     disk, then the DB rows. NoteFile.current_version_id points at a
@@ -63,38 +124,7 @@ def admin_required(f):
 @login_required
 def dashboard():
     path = request.args.get('path', '').strip('/')
-    all_notes = NoteFile.query.filter_by(
-        user_id=current_user.id, is_deleted=False
-    ).all()
-
-    prefix = f'{path}/' if path else ''
-    folder_names = set()
-    files = []
-    for note in all_notes:
-        relpath = note.relpath or ''
-        if not relpath.startswith(prefix):
-            continue
-        remainder = relpath[len(prefix):]
-        if not remainder:
-            continue
-        if '/' in remainder:
-            folder_names.add(remainder.split('/', 1)[0])
-        else:
-            files.append(note)
-
-    files.sort(key=lambda n: n.updated_at, reverse=True)
-
-    breadcrumbs = []
-    if path:
-        parts = path.split('/')
-        for i, part in enumerate(parts):
-            breadcrumbs.append({'name': part, 'path': '/'.join(parts[:i + 1])})
-
-    folders = [
-        {'name': name, 'path': f'{path}/{name}' if path else name}
-        for name in sorted(folder_names)
-    ]
-
+    files, folders, breadcrumbs = _list_notes(current_user.id, path)
     return render_template(
         'dashboard.html',
         notes=files,
@@ -107,9 +137,10 @@ def dashboard():
 @web_bp.route('/notes/<int:note_id>/versions')
 @login_required
 def note_versions(note_id):
-    note = NoteFile.query.filter_by(
-        id=note_id, user_id=current_user.id
-    ).first_or_404()
+    query = NoteFile.query.filter_by(id=note_id)
+    if not current_user.is_admin():
+        query = query.filter_by(user_id=current_user.id)
+    note = query.first_or_404()
     versions = (
         NoteVersion.query.filter_by(note_file_id=note.id)
         .order_by(NoteVersion.version_number.desc())
@@ -121,9 +152,10 @@ def note_versions(note_id):
 @web_bp.route('/notes/<int:note_id>/view')
 @login_required
 def view_note(note_id):
-    note = NoteFile.query.filter_by(
-        id=note_id, user_id=current_user.id
-    ).first_or_404()
+    query = NoteFile.query.filter_by(id=note_id)
+    if not current_user.is_admin():
+        query = query.filter_by(user_id=current_user.id)
+    note = query.first_or_404()
 
     version_number = request.args.get('version', type=int)
     version = (
@@ -419,28 +451,16 @@ def settings():
             if not file or not file.filename:
                 flash('Choose an image to upload', 'error')
             else:
-                ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
-                if ext not in ALLOWED_AVATAR_EXTENSIONS:
-                    flash('Unsupported image type - use PNG, JPG, GIF or WEBP', 'error')
+                ok, error = _save_avatar(current_user, file)
+                if not ok:
+                    flash(error, 'error')
                 else:
-                    avatar_dir = _avatar_dir()
-                    if current_user.avatar_filename:
-                        old_path = os.path.join(avatar_dir, current_user.avatar_filename)
-                        if os.path.exists(old_path):
-                            os.remove(old_path)
-                    filename = f'{current_user.id}.{ext}'
-                    file.save(os.path.join(avatar_dir, filename))
-                    current_user.avatar_filename = filename
                     db.session.commit()
                     flash('Profile picture updated', 'success')
 
         elif action == 'remove_avatar':
-            if current_user.avatar_filename:
-                path = os.path.join(_avatar_dir(), current_user.avatar_filename)
-                if os.path.exists(path):
-                    os.remove(path)
-                current_user.avatar_filename = None
-                db.session.commit()
+            _remove_avatar(current_user)
+            db.session.commit()
             flash('Profile picture removed', 'success')
 
     return render_template('settings.html')
@@ -536,9 +556,34 @@ def edit_user(user_id):
     if new_pw:
         user.set_password(new_pw)
 
+    if request.form.get('remove_avatar') == '1':
+        _remove_avatar(user)
+    else:
+        avatar_file = request.files.get('avatar')
+        if avatar_file and avatar_file.filename:
+            ok, error = _save_avatar(user, avatar_file)
+            if not ok:
+                flash(error, 'error')
+
     db.session.commit()
     flash(f'User {user.username} updated', 'success')
     return redirect(url_for('web.admin_panel'))
+
+
+@web_bp.route('/admin/users/<int:user_id>/notes')
+@admin_required
+def admin_view_notes(user_id):
+    target_user = User.query.get_or_404(user_id)
+    path = request.args.get('path', '').strip('/')
+    files, folders, breadcrumbs = _list_notes(target_user.id, path)
+    return render_template(
+        'admin_notes.html',
+        target_user=target_user,
+        notes=files,
+        folders=folders,
+        current_path=path,
+        breadcrumbs=breadcrumbs,
+    )
 
 
 @web_bp.route('/admin/users/<int:user_id>/toggle-lock', methods=['POST'])
