@@ -306,8 +306,7 @@ app_success_message() {
     echo ""
     echo -e "    ${CYAN}Run:${NC}  syncnotes"
     echo ""
-    echo "    First run will guide you through setup."
-    echo "    Default server: https://notes.huebler.tech"
+    echo "    First run will guide you through setup - it'll ask for your server's URL."
     finish
 }
 

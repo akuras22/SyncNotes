@@ -41,8 +41,8 @@ impl SetupWizard {
 
         Self {
             step: SetupStep::Welcome,
-            server_url: "https://notes.huebler.tech".to_string(),
-            server_url_edit: "https://notes.huebler.tech".to_string(),
+            server_url: String::new(),
+            server_url_edit: String::new(),
             code_info: None,
             auth_status: Arc::new(Mutex::new(String::new())),
             auth_error: None,
@@ -141,7 +141,7 @@ impl eframe::App for SetupWizard {
 
                         ui.label("Server URL:");
                         ui.add(egui::TextEdit::singleline(&mut self.server_url_edit)
-                            .hint_text("https://notes.huebler.tech")
+                            .hint_text("https://your-server.example.com")
                             .desired_width(320.0)
                             .margin(egui::Margin::symmetric(8, 8)));
                         self.server_url = self.server_url_edit.trim().to_string();

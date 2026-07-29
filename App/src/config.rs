@@ -16,7 +16,7 @@ pub struct AppConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            server_url: "https://notes.huebler.tech".to_string(),
+            server_url: String::new(),
             access_token: String::new(),
             rnotes_dir: dirs::document_dir()
                 .unwrap_or_else(|| PathBuf::from("."))

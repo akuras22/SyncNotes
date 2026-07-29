@@ -261,8 +261,7 @@ echo.
 echo     Run it:   %INSTALL_DIR%\syncnotes.exe
 echo     Or just:  syncnotes.exe   %C_DIM%(after opening a new terminal)%C_RESET%
 echo.
-echo     First run will guide you through setup.
-echo     Default server: https://notes.huebler.tech
+echo     First run will guide you through setup - it'll ask for your server's URL.
 echo.
 pause
 exit /b 0
