@@ -72,35 +72,35 @@ setup_pkg_manager() {
         debian|ubuntu|linuxmint|pop|elementary|zorin|raspbian)
             PKG_MANAGER="apt"; PKG_UPDATE="sudo apt-get update -qq"
             PKG_INSTALL="sudo apt-get install -y -qq"
-            PKGS_APP=(libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev libappindicator3-dev) ;;
+            PKGS_APP=(libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev) ;;
         arch|manjaro|endeavouros|arco|archarm|cachyos)
             PKG_MANAGER="pacman"; PKG_UPDATE="sudo pacman -Sy --noconfirm"
             PKG_INSTALL="sudo pacman -S --noconfirm"
-            PKGS_APP=(gtk3 webkit2gtk-4.1 librsvg libappindicator-gtk3) ;;
+            PKGS_APP=(gtk3 webkit2gtk-4.1 librsvg) ;;
         fedora)
             PKG_MANAGER="dnf"; PKG_UPDATE="sudo dnf check-update -q || true"
             PKG_INSTALL="sudo dnf install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel libappindicator-gtk3-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel) ;;
         rhel|centos|rocky|almalinux)
             PKG_MANAGER="dnf"; PKG_UPDATE="sudo dnf check-update -q || true"
             PKG_INSTALL="sudo dnf install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel libappindicator-gtk3-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk4.1-devel librsvg2-devel) ;;
         opensuse*|suse)
             PKG_MANAGER="zypper"; PKG_UPDATE="sudo zypper refresh"
             PKG_INSTALL="sudo zypper install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk4-devel librsvg-devel libappindicator3-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk4-devel librsvg-devel) ;;
         void)
             PKG_MANAGER="xbps"; PKG_UPDATE="sudo xbps-install -S"
             PKG_INSTALL="sudo xbps-install -y"
-            PKGS_APP=(gtk3-devel webkit2gtk-devel librsvg-devel libappindicator-gtk3-devel) ;;
+            PKGS_APP=(gtk3-devel webkit2gtk-devel librsvg-devel) ;;
         alpine)
             PKG_MANAGER="apk"; PKG_UPDATE="sudo apk update"
             PKG_INSTALL="sudo apk add"
-            PKGS_APP=(gtk3-dev webkit2gtk-dev librsvg-dev libappindicator-gtk3-dev) ;;
+            PKGS_APP=(gtk3-dev webkit2gtk-dev librsvg-dev) ;;
         solus)
             PKG_MANAGER="eopkg"; PKG_UPDATE="sudo eopkg update-repo"
             PKG_INSTALL="sudo eopkg install"
-            PKGS_APP=(libgtk-3-devel libwebkit2gtk-4.1-devel librsvg-devel libappindicator-gtk3-devel) ;;
+            PKGS_APP=(libgtk-3-devel libwebkit2gtk-4.1-devel librsvg-devel) ;;
         *)
             PKG_MANAGER="unknown" ;;
     esac
@@ -229,6 +229,18 @@ install_app() {
         else
             ok "All dependencies present"
         fi
+    fi
+
+    # Install tray indicator library (try both old and new names)
+    if ! pkg-config --exists appindicator3 2>/dev/null && ! pkg-config --exists ayatana-appindicator3 2>/dev/null; then
+        info "Installing tray icon support..."
+        case "$PKG_MANAGER" in
+            apt) $PKG_INSTALL libappindicator3-dev 2>/dev/null || $PKG_INSTALL libayatana-appindicator3-dev 2>/dev/null || true ;;
+            pacman) $PKG_INSTALL libappindicator-gtk3 2>/dev/null || true ;;
+            dnf) $PKG_INSTALL libappindicator-gtk3-devel 2>/dev/null || true ;;
+            zypper) $PKG_INSTALL libappindicator3-devel 2>/dev/null || true ;;
+            *) true ;;
+        esac
     fi
 
     header "Building"

@@ -30,8 +30,12 @@ jobs:
 
       - name: Install system deps (Linux)
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq \
-          libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev libappindicator3-dev
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev
+          # tray-icon supports both libappindicator and libayatana
+          sudo apt-get install -y -qq libappindicator3-dev 2>/dev/null || \
+          sudo apt-get install -y -qq libayatana-appindicator3-dev 2>/dev/null || true
 
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
