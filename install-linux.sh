@@ -214,19 +214,30 @@ install_app() {
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         setup_pkg_manager
         header "System Dependencies"
-        MISSING=""
-        for pkg in "${PKGS_APP[@]}"; do
-            if ! dpkg -s "$pkg" &>/dev/null 2>&1 && ! pacman -Qi "$pkg" &>/dev/null 2>&1 && ! rpm -q "$pkg" &>/dev/null 2>&1; then
-                MISSING="$MISSING $pkg"
+        PC_NAMES=("gtk+-3.0" "webkit2gtk-4.1" "librsvg-2.0")
+        MISSING_PKGS=()
+        for pc in "${PC_NAMES[@]}"; do
+            if ! pkg-config --exists "$pc" 2>/dev/null; then
+                MISSING_PKGS+=("$pc")
             fi
-        done 2>/dev/null || true
+        done
 
-        if [ -n "$MISSING" ]; then
-            warn "Missing:${MISSING}"
+        if ! pkg-config --exists appindicator3 2>/dev/null && ! pkg-config --exists ayatana-appindicator3 2>/dev/null; then
+            MISSING_PKGS+=("appindicator3")
+        fi
+
+        if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
+            warn "Missing packages (${MISSING_PKGS[*]})"
             if confirm "Install missing packages?"; then
                 $PKG_UPDATE
-                IFS=" " read -ra PKG_ARRAY <<< "$MISSING"
-                install_packages "${PKG_ARRAY[@]}"
+                install_packages "${PKGS_APP[@]}"
+                case "$PKG_MANAGER" in
+                    apt) $PKG_INSTALL libappindicator3-dev 2>/dev/null || $PKG_INSTALL libayatana-appindicator3-dev 2>/dev/null || true ;;
+                    pacman) $PKG_INSTALL libappindicator-gtk3 2>/dev/null || true ;;
+                    dnf) $PKG_INSTALL libappindicator-gtk3-devel 2>/dev/null || true ;;
+                    zypper) $PKG_INSTALL libappindicator3-devel 2>/dev/null || true ;;
+                    *) true ;;
+                esac
                 ok "Dependencies installed"
             fi
         else
@@ -234,22 +245,9 @@ install_app() {
         fi
     fi
 
-    # Install tray indicator library (try both old and new names)
-    if ! pkg-config --exists appindicator3 2>/dev/null && ! pkg-config --exists ayatana-appindicator3 2>/dev/null; then
-        info "Installing tray icon support..."
-        case "$PKG_MANAGER" in
-            apt) $PKG_INSTALL libappindicator3-dev 2>/dev/null || $PKG_INSTALL libayatana-appindicator3-dev 2>/dev/null || true ;;
-            pacman) $PKG_INSTALL libappindicator-gtk3 2>/dev/null || true ;;
-            dnf) $PKG_INSTALL libappindicator-gtk3-devel 2>/dev/null || true ;;
-            zypper) $PKG_INSTALL libappindicator3-devel 2>/dev/null || true ;;
-            *) true ;;
-        esac
-    fi
-
     header "Building"
-    info "Compiling (this takes a few minutes)..."
+    info "Compiling..."
     cd "$ROOT_DIR/App"
-    cargo clean --quiet 2>/dev/null
     cargo build --release
 
     BINARY="$ROOT_DIR/App/target/release/syncnotes-app"
