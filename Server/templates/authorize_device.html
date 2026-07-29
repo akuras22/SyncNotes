@@ -18,6 +18,19 @@
 </div>
 
 <div class="panel" style="margin-top:16px;">
+  {% if pending %}
+  <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg-card);">
+    <div class="text-sm" style="font-weight:600;margin-bottom:6px;">Pending Requests ({{ pending|length }})</div>
+    {% for code in pending %}
+    <div class="text-muted text-xs" style="line-height:1.6;padding:4px 0;">
+      <span style="font-weight:500;">{{ code.client_name }}</span>
+      {% if code.authorized_ip %} — <code style="color:var(--text);background:var(--bg);padding:0 4px;border-radius:2px;font-size:11px;">{{ code.authorized_ip }}</code>{% endif %}
+      {% if code.authorized_location %} — {{ code.authorized_location }}{% endif %}
+      <span> — expires {{ code.expires_at.strftime('%H:%M UTC') }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
   <div class="panel-header">Authorized Apps ({{ tokens|length }})</div>
   <div class="panel-body">
     {% if tokens %}

@@ -93,10 +93,17 @@ def request_device_code():
     data = request.get_json(silent=True) or {}
     client_name = data.get('client_name', 'Unknown Device')
 
+    ip = get_client_ip()
+    ua = (request.headers.get('User-Agent', '') or '')[:512]
+    location = resolve_geo(ip) if ip else None
+
     code = DeviceCode(
         user_code=DeviceCode.generate_user_code(),
         device_code=ApiToken.generate_token(),
         client_name=client_name,
+        authorized_ip=ip,
+        authorized_user_agent=ua,
+        authorized_location=location,
         expires_at=datetime.utcnow()
         + timedelta(seconds=current_app.config['DEVICE_CODE_EXPIRY']),
     )

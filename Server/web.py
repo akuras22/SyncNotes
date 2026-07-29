@@ -119,7 +119,7 @@ def authorize_device():
     pending = (
         DeviceCode.query.filter_by(is_authorized=False)
         .filter(DeviceCode.expires_at > datetime.utcnow())
-        .count()
+        .all()
     )
     tokens = ApiToken.query.filter_by(user_id=current_user.id).all()
     return render_template(

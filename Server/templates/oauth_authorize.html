@@ -29,6 +29,13 @@
         <p class="text-muted" style="margin:0 0 24px;font-size:13px;">
           This will grant access to sync your notes.
         </p>
+        {% if code.authorized_ip %}
+        <div class="text-muted text-sm" style="line-height:1.7;text-align:left;background:var(--bg-card);padding:12px;border-radius:6px;margin-bottom:24px;">
+          <div>IP: <code style="color:var(--text);background:var(--bg);padding:1px 6px;border-radius:3px;">{{ code.authorized_ip }}</code></div>
+          {% if code.authorized_location %}<div>Location: {{ code.authorized_location }}</div>{% endif %}
+          {% if code.authorized_user_agent %}<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ code.authorized_user_agent }}">Device: {{ code.authorized_user_agent[:80] }}{% if code.authorized_user_agent|length > 80 %}...{% endif %}</div>{% endif %}
+        </div>
+        {% endif %}
         <form method="POST">
           <input type="hidden" name="device_code" value="{{ code.device_code }}">
           <button class="btn btn-primary" type="submit" style="width:100%;padding:12px;font-size:16px;">Allow</button>
