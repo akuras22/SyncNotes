@@ -240,6 +240,7 @@ h1, h2, h3, h4, h5 {
   filter: brightness(1.1);
   transform: translateY(-1px);
   box-shadow: 0 14px 34px -8px rgba(53, 132, 228, 0.55);
+  color: var(--text-inverse);
   text-decoration: none;
 }
 
@@ -256,6 +257,7 @@ h1, h2, h3, h4, h5 {
 .btn-default:hover {
   background: var(--glass-strong);
   border-color: var(--border-strong);
+  color: var(--text);
   text-decoration: none;
 }
 
@@ -807,6 +809,7 @@ a:hover {
 
 .dl-menu a:hover {
   background: var(--glass-strong);
+  color: var(--text);
   text-decoration: none;
 }
 
