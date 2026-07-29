@@ -2,7 +2,10 @@ use crate::auth::{poll_auth_status, request_device_code, AuthStatus, DeviceCodeI
 use crate::config::AppConfig;
 use crate::theme;
 use eframe::egui;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+
+pub static SETUP_COMPLETE: AtomicBool = AtomicBool::new(false);
 
 enum SetupStep {
     Welcome,
@@ -70,12 +73,6 @@ impl SetupWizard {
         std::process::Command::new("cmd").args(["/c", "start", url]).spawn().ok();
         #[cfg(target_os = "macos")]
         std::process::Command::new("open").arg(url).spawn().ok();
-    }
-
-    fn start_background_app(&self) {
-        if let Ok(exe) = std::env::current_exe() {
-            std::process::Command::new(exe).arg("--daemon").spawn().ok();
-        }
     }
 
     fn start_polling(&mut self, info: DeviceCodeInfo) {
@@ -295,7 +292,6 @@ impl eframe::App for SetupWizard {
                                 }
                             }
 
-                            self.start_background_app();
                             self.step = SetupStep::Done;
                         }
                     }
@@ -303,10 +299,15 @@ impl eframe::App for SetupWizard {
                     SetupStep::Done => {
                         ui.heading("✨ Setup Complete! ✨");
                         ui.add_space(24.0);
-                        ui.label("SyncNotes is running in the background and will keep your files in sync.");
+                        ui.label("SyncNotes will keep your files in sync.");
                         ui.add_space(48.0);
-                        ui.add(egui::Button::new("Open Settings").min_size(egui::vec2(160.0, 40.0)));
-                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                        if ui.add(egui::Button::new(egui::RichText::new("Continue").size(18.0))
+                            .min_size(egui::vec2(200.0, 48.0)))
+                            .clicked()
+                        {
+                            SETUP_COMPLETE.store(true, Ordering::Relaxed);
+                            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
                     }
                 }
                 

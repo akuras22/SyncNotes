@@ -54,6 +54,12 @@ fn run_setup() {
         Box::new(|_cc| Ok(Box::new(setup::SetupWizard::new()))),
     )
     .ok();
+
+    if setup::SETUP_COMPLETE.swap(false, std::sync::atomic::Ordering::Relaxed) {
+        if let Some(cfg) = AppConfig::load() {
+            run_settings(cfg);
+        }
+    }
 }
 
 fn run_settings(mut config: AppConfig) {
