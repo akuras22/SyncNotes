@@ -25,14 +25,14 @@ select_option() {
             echo -e "    ${GREEN}▸${NC} $opt2"
         fi
         IFS= read -rsn 1 key
-        if [[ $key == $'\033' ]]; then
-            read -rsn 2 -t 0.01 key
-            case "$key" in
+        if [[ -z $key ]]; then
+            echo ""; return $selected
+        elif [[ $key == $'\033' ]]; then
+            read -rsn 2 -t 0.005 seq || true
+            case "${seq:-}" in
                 '[A') selected=0 ;;
                 '[B') selected=1 ;;
             esac
-        elif [[ $key == $'\n' ]] || [[ $key == $'\r' ]]; then
-            echo ""; return $selected
         elif [[ $key == '1' ]]; then
             echo ""; return 0
         elif [[ $key == '2' ]]; then
