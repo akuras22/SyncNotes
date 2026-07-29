@@ -283,6 +283,9 @@ install_app() {
     cp "$BINARY" "$INSTALL_DIR/syncnotes"
     ok "Installed to $INSTALL_DIR/syncnotes"
 
+    # Install logo
+    cp "$ROOT_DIR/logo.png" "$INSTALL_DIR/logo.png"
+
     # Create Desktop Entry
     info "Creating Desktop entry..."
     DESKTOP_DIR="$HOME/.local/share/applications"
@@ -295,7 +298,7 @@ Exec=$INSTALL_DIR/syncnotes
 Terminal=false
 Type=Application
 Categories=Utility;
-Icon=document-send
+Icon=$INSTALL_DIR/logo.png
 EOF
     ok "Desktop entry created at $DESKTOP_DIR/syncnotes.desktop"
 
