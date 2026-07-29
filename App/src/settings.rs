@@ -1,6 +1,8 @@
 use crate::config::AppConfig;
 use crate::theme;
+use crate::tray::SHOULD_QUIT;
 use eframe::egui;
+use std::sync::atomic::Ordering;
 
 pub struct SettingsWindow {
     config: AppConfig,
@@ -35,6 +37,10 @@ impl SettingsWindow {
 
 impl eframe::App for SettingsWindow {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        if SHOULD_QUIT.load(Ordering::Relaxed) {
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+            return;
+        }
         if let Some(cmd) = egui::ViewportCommand::center_on_screen(ui.ctx()) {
             ui.ctx().send_viewport_cmd(cmd);
         }
