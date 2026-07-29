@@ -1,6 +1,5 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread;
-use std::time::Duration;
+use std::thread::{self, JoinHandle};
 use tray_icon::menu::{Menu, MenuEvent, MenuItem};
 use tray_icon::{Icon, TrayIconBuilder};
 
@@ -8,7 +7,7 @@ use crate::icon::load_logo_rgba;
 
 pub static SHOULD_QUIT: AtomicBool = AtomicBool::new(false);
 
-pub fn create_tray() -> Option<thread::JoinHandle<()>> {
+pub fn create_tray() -> Option<JoinHandle<()>> {
     let icon = make_tray_icon()?;
 
     let handle = thread::Builder::new()
@@ -43,13 +42,15 @@ pub fn create_tray() -> Option<thread::JoinHandle<()>> {
                 return;
             }
 
-            loop {
-                gtk::main_iteration_do(false);
+            glib::timeout_add_local(std::time::Duration::from_millis(200), move || {
                 if SHOULD_QUIT.load(Ordering::Relaxed) {
-                    break;
+                    gtk::main_quit();
+                    glib::ControlFlow::Break
+                } else {
+                    glib::ControlFlow::Continue
                 }
-                thread::sleep(Duration::from_millis(100));
-            }
+            });
+            gtk::main();
         })
         .ok()?;
 
