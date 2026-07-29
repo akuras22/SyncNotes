@@ -13,7 +13,11 @@ fn load_icon() -> Option<egui::IconData> {
     let small = img.resize_exact(64, 64, image::imageops::FilterType::Lanczos3);
     let rgba = small.to_rgba8();
     let (w, h) = rgba.dimensions();
-    Some(egui::IconData::from_rgba_unmultiplied(rgba.as_raw().clone(), w, h))
+    Some(egui::IconData {
+        rgba: rgba.as_raw().clone(),
+        width: w,
+        height: h,
+    })
 }
 
 fn main() {

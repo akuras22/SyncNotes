@@ -35,7 +35,9 @@ impl SettingsWindow {
 
 impl eframe::App for SettingsWindow {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        ui.ctx().send_viewport_cmd(egui::ViewportCommand::CenterOnScreen);
+        if let Some(cmd) = egui::ViewportCommand::center_on_screen(ui.ctx()) {
+            ui.ctx().send_viewport_cmd(cmd);
+        }
         let style = theme::dark_theme();
         ui.ctx().set_style_of(egui::Theme::Dark, style);
 
