@@ -112,11 +112,36 @@
 {% if u.id != current_user.id %}
 <div class="modal-overlay" id="editModal-{{ u.id }}" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
   <div class="modal" onclick="event.stopPropagation()">
-    <form method="POST" action="{{ url_for('web.edit_user', user_id=u.id) }}" enctype="multipart/form-data">
-      <div class="modal-header">
-        <h3 class="modal-title">Edit User: {{ u.username }}</h3>
+    <div class="modal-header">
+      <h3 class="modal-title">Edit User: {{ u.username }}</h3>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="padding-bottom:18px;border-bottom:1px solid var(--border);">
+        <label class="form-label">Profile Picture</label>
+        <div class="flex items-center" style="gap:10px;">
+          <span class="user-avatar" style="width:40px;height:40px;font-size:16px;">
+            {% if u.avatar_filename %}
+              <img src="{{ url_for('web.avatar', user_id=u.id) }}" alt="">
+            {% else %}
+              {{ u.username[0]|upper }}
+            {% endif %}
+          </span>
+          <form method="POST" action="{{ url_for('web.edit_user', user_id=u.id) }}" enctype="multipart/form-data" id="avatar-upload-form-{{ u.id }}" style="display:inline;">
+            <input type="file" name="avatar" id="avatar-input-{{ u.id }}" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;"
+                   onchange="document.getElementById('avatar-upload-form-{{ u.id }}').submit()">
+            <button type="button" class="btn btn-sm btn-default" onclick="document.getElementById('avatar-input-{{ u.id }}').click()">Change Picture</button>
+          </form>
+          {% if u.avatar_filename %}
+          <form method="POST" action="{{ url_for('web.edit_user', user_id=u.id) }}" style="display:inline;"
+                onsubmit="return swalConfirm('Remove {{ u.username|e }}&#39;s profile picture?', this);">
+            <input type="hidden" name="remove_avatar" value="1">
+            <button type="submit" class="btn btn-sm btn-flat">Remove</button>
+          </form>
+          {% endif %}
+        </div>
       </div>
-      <div class="modal-body">
+
+      <form method="POST" action="{{ url_for('web.edit_user', user_id=u.id) }}" id="edit-user-form-{{ u.id }}">
         <div class="form-group">
           <label class="form-label">Username</label>
           <input class="form-input" type="text" name="username" value="{{ u.username }}">
@@ -125,37 +150,16 @@
           <label class="form-label">Email</label>
           <input class="form-input" type="email" name="email" value="{{ u.email }}">
         </div>
-        <div class="form-group">
+        <div class="form-group mb-0">
           <label class="form-label">New Password <span class="text-muted text-sm" style="font-weight:400;">(leave blank to keep current)</span></label>
           <input class="form-input" type="password" name="password" placeholder="New password">
         </div>
-        <div class="form-group mb-0">
-          <label class="form-label">Profile Picture</label>
-          <div class="flex items-center" style="gap:10px;">
-            <span class="user-avatar" style="width:40px;height:40px;font-size:16px;">
-              {% if u.avatar_filename %}
-                <img src="{{ url_for('web.avatar', user_id=u.id) }}" alt="">
-              {% else %}
-                {{ u.username[0]|upper }}
-              {% endif %}
-            </span>
-            <input type="file" name="avatar" id="avatar-input-{{ u.id }}" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;"
-                   onchange="document.getElementById('avatar-filename-{{ u.id }}').textContent = this.files[0] ? this.files[0].name : 'No file chosen'">
-            <button type="button" class="btn btn-sm btn-default" onclick="document.getElementById('avatar-input-{{ u.id }}').click()">Change Picture</button>
-            <span class="text-muted text-sm" id="avatar-filename-{{ u.id }}">No file chosen</span>
-          </div>
-          {% if u.avatar_filename %}
-          <label class="flex items-center text-sm" style="gap:6px;margin-top:8px;font-weight:500;cursor:pointer;">
-            <input type="checkbox" name="remove_avatar" value="1"> Remove current picture
-          </label>
-          {% endif %}
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" onclick="document.getElementById('editModal-{{ u.id }}').style.display='none'">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save Changes</button>
-      </div>
-    </form>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-default" onclick="document.getElementById('editModal-{{ u.id }}').style.display='none'">Cancel</button>
+      <button type="submit" form="edit-user-form-{{ u.id }}" class="btn btn-primary">Save Changes</button>
+    </div>
   </div>
 </div>
 {% endif %}
