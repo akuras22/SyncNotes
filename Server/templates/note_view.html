@@ -12,16 +12,21 @@
     <a class="btn btn-primary" href="{{ url_for('api.download_pdf', relpath=note.relpath, version=version.version_number, attachment=1) }}">Download PDF</a>
   </div>
 </div>
+{% endblock %}
 
-<div class="pdf-toolbar panel">
-  <button class="btn btn-sm btn-default" id="pdf-zoom-out" type="button" aria-label="Zoom out">&minus;</button>
-  <span class="text-sm text-muted" id="pdf-zoom-label">100%</span>
-  <button class="btn btn-sm btn-default" id="pdf-zoom-in" type="button" aria-label="Zoom in">+</button>
-  <span class="text-sm text-muted" id="pdf-page-label" style="margin-left:auto;"></span>
-</div>
+{% block content_full %}
+<div class="full-bleed">
+  <div class="pdf-toolbar panel">
+    <button class="btn btn-sm btn-default" id="pdf-zoom-out" type="button" aria-label="Zoom out">&minus;</button>
+    <span class="text-sm text-muted" id="pdf-zoom-label">100%</span>
+    <button class="btn btn-sm btn-default" id="pdf-zoom-in" type="button" aria-label="Zoom in">+</button>
+    <span class="text-sm text-muted" style="margin-left:14px;">Drag to move around</span>
+    <span class="text-sm text-muted" id="pdf-page-label" style="margin-left:auto;"></span>
+  </div>
 
-<div id="pdf-pages" class="pdf-pages">
-  <p class="text-muted text-sm" style="text-align:center;padding:60px 0;">Loading&hellip;</p>
+  <div id="pdf-pages" class="pdf-pages">
+    <p class="text-muted text-sm" style="text-align:center;padding:60px 0;">Loading&hellip;</p>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -41,6 +46,12 @@
   async function renderAll() {
     if (!pdfDoc || rendering) return;
     rendering = true;
+
+    const denomX = container.scrollWidth - container.clientWidth;
+    const denomY = container.scrollHeight - container.clientHeight;
+    const ratioX = denomX > 0 ? container.scrollLeft / denomX : 0;
+    const ratioY = denomY > 0 ? container.scrollTop / denomY : 0;
+
     container.innerHTML = '';
     for (let num = 1; num <= pdfDoc.numPages; num++) {
       const page = await pdfDoc.getPage(num);
@@ -52,11 +63,16 @@
       container.appendChild(canvas);
       await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
     }
+
+    requestAnimationFrame(() => {
+      container.scrollLeft = ratioX * Math.max(container.scrollWidth - container.clientWidth, 0);
+      container.scrollTop = ratioY * Math.max(container.scrollHeight - container.clientHeight, 0);
+    });
     rendering = false;
   }
 
   function setZoom(next) {
-    scale = Math.min(Math.max(next, 0.5), 3);
+    scale = Math.min(Math.max(next, 0.5), 4);
     zoomLabel.textContent = Math.round((scale / BASE_SCALE) * 100) + '%';
     renderAll();
   }
@@ -79,6 +95,37 @@
 
   document.getElementById('pdf-zoom-in').addEventListener('click', () => setZoom(scale + 0.2));
   document.getElementById('pdf-zoom-out').addEventListener('click', () => setZoom(scale - 0.2));
+
+  // Grab-to-pan with the left mouse button or a single touch, unified via
+  // Pointer Events. touch-action:none on .pdf-pages (see style.css) hands
+  // touch panning to this same code path instead of native scrolling.
+  let dragging = false;
+  let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+  container.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    dragging = true;
+    container.classList.add('dragging');
+    container.setPointerCapture(e.pointerId);
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = container.scrollLeft;
+    startTop = container.scrollTop;
+  });
+
+  container.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    container.scrollLeft = startLeft - (e.clientX - startX);
+    container.scrollTop = startTop - (e.clientY - startY);
+  });
+
+  function stopDrag() {
+    dragging = false;
+    container.classList.remove('dragging');
+  }
+  container.addEventListener('pointerup', stopDrag);
+  container.addEventListener('pointercancel', stopDrag);
+  container.addEventListener('pointerleave', stopDrag);
 })();
 </script>
 {% endblock %}

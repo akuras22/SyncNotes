@@ -823,6 +823,16 @@ a:hover {
 /* ── PDF viewer (rendered ourselves via pdf.js so it matches the site's
    theme instead of the browser's native PDF chrome, which ignores our
    design and - in dark mode - inverts the page colors) ── */
+/* Break out of the centered .container so the viewer can use the full
+   viewport width, regardless of how narrow/wide the surrounding page
+   chrome is. */
+.full-bleed {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding: 0 20px;
+}
+
 .pdf-toolbar {
   display: flex;
   align-items: center;
@@ -832,21 +842,31 @@ a:hover {
 }
 
 .pdf-pages {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 22px;
-  padding: 4px 0 40px;
-  overflow-x: auto;
+  overflow: auto;
+  height: 78vh;
+  min-height: 420px;
+  padding: 20px 0 40px;
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.pdf-pages.dragging {
+  cursor: grabbing;
 }
 
 .pdf-page {
   display: block;
-  flex-shrink: 0;
+  margin: 0 auto 22px;
   background: #fff;
   border-radius: 6px;
   box-shadow: var(--shadow-lg);
   animation: rise-in 240ms var(--ease) both;
+}
+
+.pdf-page:last-child {
+  margin-bottom: 0;
 }
 
 /* ── Empty state ── */
