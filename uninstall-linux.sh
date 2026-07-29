@@ -114,7 +114,9 @@ uninstall_app() {
     CONFIG_DIR="$HOME/.config/syncnotes"
     [ -d "$CONFIG_DIR" ] && rm -rf "$CONFIG_DIR" && ok "Config removed"
 
-    [ -f "$HOME/.config/autostart/syncnotes.desktop" ] && rm -f "$HOME/.config/autostart/syncnotes.desktop" && ok "Autostart entry removed"
+    rm -f "$HOME/.config/autostart/syncnotes.desktop" "$HOME/.config/autostart/SyncNotes.desktop" 2>/dev/null
+    rmdir "$HOME/.config/autostart" 2>/dev/null || true
+    ok "Autostart entry removed"
 
     DESKTOP_FILE="$HOME/.local/share/applications/syncnotes.desktop"
     [ -f "$DESKTOP_FILE" ] && rm -f "$DESKTOP_FILE" && ok "Desktop menu entry removed"
