@@ -54,7 +54,7 @@ impl eframe::App for SettingsWindow {
         if close_requested {
             if self.config.show_tray_icon {
                 ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
-                ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(true));
+                ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
             }
         }
 

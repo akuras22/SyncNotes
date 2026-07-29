@@ -92,6 +92,11 @@ uninstall_server() {
 uninstall_app() {
     header "Desktop App Uninstall"
 
+    if pkill -f "syncnotes-app" 2>/dev/null || pkill -f "syncnotes" 2>/dev/null; then
+        ok "Stopped running instances"
+        sleep 1
+    fi
+
     for path in "/usr/local/bin/syncnotes" "$HOME/.local/bin/syncnotes"; do
         if [ -f "$path" ]; then
             if confirm "Remove binary at $path?"; then
