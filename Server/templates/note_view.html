@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ note.name }} — SyncNotes{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4" style="gap:12px;flex-wrap:wrap;">
+  <div>
+    <a class="text-sm" href="{{ url_for('web.dashboard') }}">&larr; My Notes</a>
+    <h3 style="font-size:19px;font-weight:800;margin:6px 0 0;letter-spacing:-0.02em;">{{ note.name }}</h3>
+    <p class="text-muted text-sm" style="margin:2px 0 0;">v{{ version.version_number }} &middot; {{ version.created_at|de_dt }}</p>
+  </div>
+  <div class="flex items-center" style="gap:8px;">
+    <a class="btn btn-sm btn-default" href="{{ url_for('web.note_versions', note_id=note.id) }}">History</a>
+    <a class="btn btn-primary" href="{{ url_for('api.download_pdf', relpath=note.relpath, version=version.version_number, attachment=1) }}">Download PDF</a>
+  </div>
+</div>
+
+<div class="panel pdf-viewer">
+  <iframe src="{{ url_for('api.download_pdf', relpath=note.relpath, version=version.version_number) }}" title="{{ note.name }}"></iframe>
+</div>
+{% endblock %}

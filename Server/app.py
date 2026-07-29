@@ -1,6 +1,8 @@
 import hashlib
 import os
+from datetime import timezone
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 import pymysql
 from flask import Flask
@@ -11,6 +13,35 @@ from config import Config
 from models import db, NoteFile, NoteVersion, User
 
 login_manager = LoginManager()
+
+BERLIN_TZ = ZoneInfo('Europe/Berlin')
+
+
+def _to_berlin(dt):
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(BERLIN_TZ)
+
+
+def format_de_datetime(dt):
+    """German date/time format in Europe/Berlin, e.g. 29.07.2026 20:26."""
+    berlin = _to_berlin(dt)
+    return berlin.strftime('%d.%m.%Y %H:%M') if berlin else ''
+
+
+def format_de_datetime_tz(dt):
+    """Same as format_de_datetime but with the timezone abbreviation, e.g.
+    29.07.2026 20:26 CEST - for places that previously showed a bare
+    'UTC' suffix on a naive timestamp."""
+    berlin = _to_berlin(dt)
+    return berlin.strftime('%d.%m.%Y %H:%M %Z') if berlin else ''
+
+
+def format_de_date(dt):
+    berlin = _to_berlin(dt)
+    return berlin.strftime('%d.%m.%Y') if berlin else ''
 
 
 def ensure_database():
@@ -116,6 +147,10 @@ def create_app():
 
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    app.jinja_env.filters['de_dt'] = format_de_datetime
+    app.jinja_env.filters['de_dt_tz'] = format_de_datetime_tz
+    app.jinja_env.filters['de_date'] = format_de_date
 
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 

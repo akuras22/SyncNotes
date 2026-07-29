@@ -512,10 +512,13 @@ def download_pdf():
     if not version or not version.pdf_filename:
         abort(404)
 
+    as_attachment = request.args.get('attachment', '') in ('1', 'true')
     return send_from_directory(
         user_upload_dir(),
         version.pdf_filename,
         mimetype='application/pdf',
+        as_attachment=as_attachment,
+        download_name=(secure_filename(note.name) + '.pdf') if as_attachment else None,
     )
 
 

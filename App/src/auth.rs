@@ -1,6 +1,40 @@
 use std::thread;
 use std::time::Duration;
 
+/// Best-effort hostname lookup so authorized apps show up on the website
+/// named after the actual machine ("jons-laptop") instead of a generic
+/// "SyncNotes Desktop" for every device. Falls back gracefully if nothing
+/// is available - never blocks pairing on this.
+fn device_client_name() -> String {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(name) = std::env::var("COMPUTERNAME") {
+            let name = name.trim().to_string();
+            if !name.is_empty() {
+                return name;
+            }
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        if let Ok(name) = std::env::var("HOSTNAME") {
+            let name = name.trim().to_string();
+            if !name.is_empty() {
+                return name;
+            }
+        }
+        if let Ok(output) = std::process::Command::new("hostname").output() {
+            if output.status.success() {
+                let name = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !name.is_empty() {
+                    return name;
+                }
+            }
+        }
+    }
+    "SyncNotes Desktop".to_string()
+}
+
 #[derive(Debug, Clone)]
 pub struct DeviceCodeInfo {
     pub user_code: String,
@@ -23,7 +57,7 @@ pub fn request_device_code(server_url: &str) -> Result<DeviceCodeInfo, String> {
     let client = reqwest::blocking::Client::new();
     let resp = client
         .post(&url)
-        .json(&serde_json::json!({ "client_name": "SyncNotes Desktop" }))
+        .json(&serde_json::json!({ "client_name": device_client_name() }))
         .send()
         .map_err(|e| format!("Failed to connect: {}", e))?;
 

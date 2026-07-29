@@ -45,7 +45,7 @@
             {% if authorized_at %}
             <div class="auth-meta-row">
               <span class="auth-meta-row-label">Authorized</span>
-              <span class="auth-meta-row-value">{{ authorized_at.strftime('%Y-%m-%d %H:%M UTC') }}</span>
+              <span class="auth-meta-row-value">{{ authorized_at|de_dt_tz }}</span>
             </div>
             {% endif %}
             {% if ua %}

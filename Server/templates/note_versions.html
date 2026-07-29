@@ -32,13 +32,14 @@
               {% endif %}
             </td>
             <td>{{ (version.file_size / 1024)|round(1) }} KB</td>
-            <td>{{ version.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ version.created_at|de_dt }}</td>
             <td>{{ version.device_name or 'Web' }}</td>
             <td style="text-align:right;">
               {% if version.pdf_filename %}
-                <a class="btn btn-sm btn-default" href="{{ url_for('api.download_pdf', relpath=note.relpath, version=version.version_number) }}" target="_blank">PDF</a>
+                <a class="btn btn-sm btn-default" href="{{ url_for('web.view_note', note_id=note.id, version=version.version_number) }}">View</a>
+                <a class="btn btn-sm btn-default" href="{{ url_for('api.download_pdf', relpath=note.relpath, version=version.version_number, attachment=1) }}">PDF</a>
               {% endif %}
-              <a class="btn btn-sm btn-default" href="{{ url_for('api.download_note', relpath=note.relpath, version=version.version_number) }}">Download</a>
+              <a class="btn btn-sm btn-default" href="{{ url_for('api.download_note', relpath=note.relpath, version=version.version_number) }}">.rnote</a>
             </td>
           </tr>
         {% endfor %}

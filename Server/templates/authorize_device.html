@@ -24,7 +24,7 @@
     {% for code in pending %}
     <div class="text-muted text-xs" style="line-height:1.6;padding:4px 0;">
       <span style="font-weight:500;">{{ code.client_name }}</span>
-      <span> — expires {{ code.expires_at.strftime('%H:%M UTC') }}</span>
+      <span> — expires {{ code.expires_at|de_dt_tz }}</span>
     </div>
     {% endfor %}
   </div>
@@ -52,9 +52,9 @@
             </div>
           </div>
           <div class="text-muted text-sm" style="line-height:1.7;">
-            <div>Created: {{ token.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</div>
+            <div>Created: {{ token.created_at|de_dt_tz }}</div>
             {% if token.last_used_at %}
-            <div>Last used: {{ token.last_used_at.strftime('%Y-%m-%d %H:%M UTC') }}</div>
+            <div>Last used: {{ token.last_used_at|de_dt_tz }}</div>
             {% endif %}
             {% if token.last_user_agent %}
             <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:560px;" title="{{ token.last_user_agent }}">Device: {{ token.last_user_agent[:100] }}{% if token.last_user_agent|length > 100 %}...{% endif %}</div>

@@ -1,7 +1,7 @@
 from datetime import datetime
 from functools import wraps
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from api import get_client_ip, parse_user_agent, resolve_geo
@@ -78,6 +78,25 @@ def note_versions(note_id):
         .all()
     )
     return render_template('note_versions.html', note=note, versions=versions)
+
+
+@web_bp.route('/notes/<int:note_id>/view')
+@login_required
+def view_note(note_id):
+    note = NoteFile.query.filter_by(
+        id=note_id, user_id=current_user.id
+    ).first_or_404()
+
+    version_number = request.args.get('version', type=int)
+    version = (
+        NoteVersion.query.filter_by(note_file_id=note.id, version_number=version_number).first()
+        if version_number
+        else note.current_version
+    )
+    if not version or not version.pdf_filename:
+        abort(404)
+
+    return render_template('note_view.html', note=note, version=version)
 
 
 @web_bp.route('/login', methods=['GET', 'POST'])
@@ -303,6 +322,30 @@ def settings():
 def admin_panel():
     users = User.query.order_by(User.created_at.desc()).all()
     return render_template('admin.html', users=users)
+
+
+@web_bp.route('/admin/users/create', methods=['POST'])
+@admin_required
+def create_user():
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip()
+    password = request.form.get('password', '')
+    role = 'admin' if request.form.get('role') == 'admin' else 'user'
+
+    if not username or not email or not password:
+        flash('All fields are required', 'error')
+    elif User.query.filter_by(username=username).first():
+        flash('Username already taken', 'error')
+    elif User.query.filter_by(email=email).first():
+        flash('Email already registered', 'error')
+    else:
+        user = User(username=username, email=email, role=role)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        flash(f'User {username} created', 'success')
+
+    return redirect(url_for('web.admin_panel'))
 
 
 @web_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
