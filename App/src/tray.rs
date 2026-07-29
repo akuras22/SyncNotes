@@ -12,7 +12,7 @@ pub fn create_tray() -> Option<TrayIcon> {
 
     let show = MenuItem::new("Show Settings", true, None);
     let quit = MenuItem::new("Quit", true, None);
-    let quit_id = quit.id();
+    let quit_id = quit.id().clone();
 
     let menu = Menu::new();
     menu.append_items(&[&show, &quit]).ok()?;
