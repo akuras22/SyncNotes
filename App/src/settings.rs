@@ -33,7 +33,6 @@ impl eframe::App for SettingsWindow {
                 ui.add(
                     egui::Image::new(egui::include_image!("../../logo.png"))
                         .max_width(64.0)
-                        .rounding(8.0)
                 );
                 ui.add_space(8.0);
                 ui.heading(egui::RichText::new("SyncNotes Settings").size(24.0).strong());

@@ -97,7 +97,6 @@ impl eframe::App for SetupWizard {
                         ui.add(
                             egui::Image::new(egui::include_image!("../../logo.png"))
                                 .max_width(96.0)
-                                .rounding(12.0)
                         );
                         ui.add_space(8.0);
                         ui.heading(egui::RichText::new("Welcome to SyncNotes").size(32.0).strong());
