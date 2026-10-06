@@ -1,5 +1,5 @@
 use crate::config::AppConfig;
-use notify::event::{EventKind, ModifyKind, RenameMode};
+use notify::event::{AccessKind, AccessMode, EventKind, ModifyKind, RenameMode};
 use notify::RecursiveMode;
 use notify_debouncer_full::{new_debouncer, DebounceEventResult};
 use serde::{Deserialize, Serialize};
@@ -138,6 +138,16 @@ fn run(config: AppConfig, tx: mpsc::Sender<SyncEvent>, rx: mpsc::Receiver<SyncEv
     let debouncer = new_debouncer(DEBOUNCE_WINDOW, None, move |result: DebounceEventResult| {
         if let Ok(events) = result {
             for event in events {
+                // On Linux notify reports every open() of a watched file as an
+                // Access event - including the ones hash_file() makes while
+                // handling LocalTouched, which would land right back here and
+                // re-hash every note forever. Only a close after writing can
+                // mean the content changed, so drop all other Access events.
+                if let EventKind::Access(kind) = event.kind {
+                    if kind != AccessKind::Close(AccessMode::Write) {
+                        continue;
+                    }
+                }
                 // notify-debouncer-full correlates a rename's "from" and "to"
                 // halves into one event when it can, so a plain edit-in-place
                 // rename shows up as a single clean pair here rather than a
